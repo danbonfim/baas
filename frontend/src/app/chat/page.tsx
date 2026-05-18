@@ -172,9 +172,9 @@ export default function ChatPage() {
   )
 
   const messageGroups = groupMessagesByDate(messages)
-  const partnerName = activeConversation?.partner?.name
-    ?? (activeConversation?.clientId === user.id ? 'Profissional' : 'Cliente')
-    ?? 'Conversa'
+  const partnerName = activeConversation
+    ? (activeConversation.partner?.name ?? (activeConversation.clientId === user.id ? 'Profissional' : 'Cliente'))
+    : 'Conversa'
 
   return (
     <div className="h-[calc(100vh-64px)] flex overflow-hidden">
