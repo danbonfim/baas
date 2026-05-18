@@ -1,4 +1,4 @@
-import { Controller, Get, Patch, Param, Body, UseGuards } from '@nestjs/common'
+import { Controller, Get, Patch, Param, Body, UseGuards, Query } from '@nestjs/common'
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger'
 import { AdminService } from './admin.service'
 import { JwtAuthGuard } from '../auth/jwt-auth.guard'
@@ -32,5 +32,15 @@ export class AdminController {
   @ApiOperation({ summary: 'Ban user' })
   banUser(@Param('id') id: string, @Body('reason') reason: string) {
     return this.service.banUser(id, reason)
+  }
+
+  @Get('bookings/recent')
+  recentBookings() {
+    return this.service.getRecentBookings()
+  }
+
+  @Get('users')
+  allUsers(@Query('page') page?: string) {
+    return this.service.getAllUsers(page ? parseInt(page) : 1)
   }
 }

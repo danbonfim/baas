@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Query, UseGuards, Request, Patch, Body } from '@nestjs/common'
+import { Controller, Get, Post, Param, Query, UseGuards, Request, Patch, Body } from '@nestjs/common'
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiQuery } from '@nestjs/swagger'
 import { ProfessionalsService } from './professionals.service'
 import { JwtAuthGuard } from '../auth/jwt-auth.guard'
@@ -54,5 +54,26 @@ export class ProfessionalsController {
   @ApiOperation({ summary: 'Update professional profile' })
   updateProfile(@Request() req: any, @Body() body: any) {
     return this.service.updateProfile(req.user.professionalId, body)
+  }
+
+  @Get('me/favorites')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  getFavorites(@Request() req: any) {
+    return this.service.getFavorites(req.user.sub)
+  }
+
+  @Post(':id/favorite')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  toggleFavorite(@Param('id') id: string, @Request() req: any) {
+    return this.service.toggleFavorite(req.user.sub, id)
+  }
+
+  @Get(':id/is-favorited')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  isFavorited(@Param('id') id: string, @Request() req: any) {
+    return this.service.isFavorited(req.user.sub, id)
   }
 }

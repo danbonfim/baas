@@ -12,9 +12,10 @@ import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useProfessional } from '@/hooks/useProfessionals'
-import { mockProfessionals, mockReviews } from '@/config/mock-data'
+import { mockProfessionals } from '@/config/mock-data'
 import { useAuthStore } from '@/store/auth.store'
 import { api, extractError } from '@/lib/api'
+import { useReviews } from '@/hooks/useReviews'
 import { toast } from 'sonner'
 import Link from 'next/link'
 
@@ -29,7 +30,8 @@ export default function ProfilePage() {
   // Fallback to mock while API loads or if unavailable
   const mockPro = mockProfessionals.find((p) => p.slug === slug) ?? mockProfessionals[0]
   const professional = apiPro ?? mockPro
-  const mockReviewsFiltered = mockReviews.filter((r) => r.professionalId === professional.id)
+
+  const { reviews } = useReviews(professional.id)
 
   const [selectedPhoto, setSelectedPhoto] = useState(0)
   const [lightboxOpen, setLightboxOpen] = useState(false)
@@ -270,7 +272,7 @@ export default function ProfilePage() {
           <Tabs defaultValue="about" className="w-full">
             <TabsList className="bg-white/5 border border-white/10">
               <TabsTrigger value="about">Sobre</TabsTrigger>
-              <TabsTrigger value="reviews">Avaliações ({mockReviewsFiltered.length})</TabsTrigger>
+              <TabsTrigger value="reviews">Avaliações ({reviews.length})</TabsTrigger>
             </TabsList>
 
             <TabsContent value="about" className="mt-6">
@@ -282,17 +284,22 @@ export default function ProfilePage() {
 
             <TabsContent value="reviews" className="mt-6">
               <div className="space-y-4">
-                {mockReviewsFiltered.length > 0 ? mockReviewsFiltered.map((review) => (
+                {reviews.length > 0 ? reviews.map((review) => (
                   <div key={review.id} className="glass rounded-xl p-4">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="font-medium text-sm">{review.clientName}</span>
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-full bg-brand-500/20 flex items-center justify-center text-brand-400 text-xs font-bold flex-shrink-0">
+                          {review.client?.user?.name?.[0] ?? 'C'}
+                        </div>
+                        <span className="font-medium text-sm">{review.client?.user?.name ?? 'Cliente'}</span>
+                      </div>
                       <div className="flex items-center gap-1">
                         {Array.from({ length: 5 }).map((_, i) => (
-                          <Star key={i} className={`w-3.5 h-3.5 ${i < review.rating ? 'text-gold-400 fill-gold-400' : 'text-white/20'}`} />
+                          <Star key={i} className={`w-3.5 h-3.5 ${i < review.rating ? 'text-yellow-400 fill-yellow-400' : 'text-white/20'}`} />
                         ))}
                       </div>
                     </div>
-                    <p className="text-sm text-muted-foreground">{review.comment}</p>
+                    {review.comment && <p className="text-sm text-muted-foreground">{review.comment}</p>}
                     <p className="text-xs text-muted-foreground mt-2">{new Date(review.createdAt).toLocaleDateString('pt-BR')}</p>
                   </div>
                 )) : (

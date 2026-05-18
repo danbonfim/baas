@@ -7,6 +7,7 @@ import { Menu, X, Search, Heart, MessageCircle, User, Crown, Sparkles, LogOut, C
 import { Button } from '@/components/ui/button'
 import { useAuthStore } from '@/store/auth.store'
 import { useAuth } from '@/hooks/useAuth'
+import { NotificationBell } from '@/components/layout/NotificationBell'
 
 const navLinks = [
   { href: '/search', label: 'Explorar', icon: Search },
@@ -52,6 +53,8 @@ export function Navbar() {
                 <Heart className="w-5 h-5" />
               </Button>
             </Link>
+
+            {isAuthenticated && user && <NotificationBell />}
 
             {isAuthenticated && user ? (
               <div className="relative">

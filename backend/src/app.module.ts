@@ -10,6 +10,8 @@ import { PaymentsModule } from './payments/payments.module'
 import { SubscriptionsModule } from './subscriptions/subscriptions.module'
 import { ChatModule } from './chat/chat.module'
 import { AdminModule } from './admin/admin.module'
+import { ReviewsModule } from './reviews/reviews.module'
+import { NotificationsModule } from './notifications/notifications.module'
 
 @Module({
   imports: [
@@ -23,6 +25,8 @@ import { AdminModule } from './admin/admin.module'
     SubscriptionsModule,
     ChatModule,
     AdminModule,
+    ReviewsModule,
+    NotificationsModule,
   ],
   providers: [PrismaService],
   exports: [PrismaService],

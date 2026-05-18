@@ -45,4 +45,33 @@ export class AdminService {
       data: { banned: true, bannedReason: reason },
     })
   }
+
+  async getRecentBookings() {
+    return this.prisma.booking.findMany({
+      take: 20,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        client: { include: { user: { select: { name: true } } } },
+        professional: { include: { user: { select: { name: true } } } },
+      },
+    })
+  }
+
+  async getAllUsers(page = 1, limit = 20) {
+    const skip = (page - 1) * limit
+    const [users, total] = await this.prisma.$transaction([
+      this.prisma.user.findMany({
+        skip, take: limit,
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true, name: true, email: true, role: true,
+          createdAt: true, banned: true,
+          client: { select: { id: true } },
+          professional: { select: { id: true, verified: true, kycStatus: true } },
+        },
+      }),
+      this.prisma.user.count(),
+    ])
+    return { users, total, page, totalPages: Math.ceil(total / limit) }
+  }
 }

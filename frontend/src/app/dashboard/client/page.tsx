@@ -1,17 +1,21 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Heart, Calendar, Wallet, Crown, Star, Clock,
   Gift, Loader2, TrendingUp, AlertCircle, CheckCircle2,
-  XCircle, Coins
+  XCircle, Coins, MapPin
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useMyBookings, useCreateBooking, BookingData } from '@/hooks/useBookings'
 import { useRequireAuth } from '@/hooks/useRequireAuth'
+import { useReviewableBookings } from '@/hooks/useReviews'
+import { ReviewForm } from '@/components/reviews/ReviewForm'
+import { ReviewableBooking } from '@/hooks/useReviews'
+import { api } from '@/lib/api'
 import Link from 'next/link'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -66,11 +70,41 @@ function BookingCard({ booking, onCancel }: { booking: BookingData; onCancel: (i
   )
 }
 
+interface FavoriteItem {
+  id: string
+  professional: {
+    id: string
+    slug: string
+    pricePerHour: number
+    city: string
+    rating: number
+    user: { name: string; avatar?: string | null }
+    categories: { name: string }[]
+  }
+}
+
 export default function ClientDashboard() {
   const { ready, user } = useRequireAuth()
   const { bookings, loading: bookingsLoading, refetch } = useMyBookings()
   const { cancelBooking } = useCreateBooking()
   const [activeTab, setActiveTab] = useState('bookings')
+
+  const { bookings: reviewable } = useReviewableBookings()
+  const [reviewingBooking, setReviewingBooking] = useState<string | null>(null)
+  const [completedReviews, setCompletedReviews] = useState<Set<string>>(new Set())
+
+  const [favorites, setFavorites] = useState<FavoriteItem[]>([])
+  const [favoritesLoading, setFavoritesLoading] = useState(false)
+
+  useEffect(() => {
+    if (activeTab === 'favorites' && ready) {
+      setFavoritesLoading(true)
+      api.get('/professionals/me/favorites')
+        .then(({ data }) => setFavorites(data))
+        .catch(() => {})
+        .finally(() => setFavoritesLoading(false))
+    }
+  }, [activeTab, ready])
 
   if (!ready || !user) return (
     <div className="min-h-screen flex items-center justify-center">
@@ -91,6 +125,8 @@ export default function ClientDashboard() {
     const result = await cancelBooking(id)
     if (result) refetch()
   }
+
+  const pendingReviewable = reviewable.filter(b => !completedReviews.has(b.id))
 
   return (
     <div className="min-h-screen pb-20">
@@ -180,11 +216,59 @@ export default function ClientDashboard() {
               )}
             </TabsTrigger>
             <TabsTrigger value="wallet">Carteira</TabsTrigger>
-            <TabsTrigger value="favorites">Favoritos</TabsTrigger>
+            <TabsTrigger value="favorites">
+              Favoritos
+              {favorites.length > 0 && (
+                <span className="ml-1 text-xs text-muted-foreground">({favorites.length})</span>
+              )}
+            </TabsTrigger>
           </TabsList>
 
           {/* Agendamentos */}
           <TabsContent value="bookings">
+            {/* Reviewable bookings section */}
+            {pendingReviewable.length > 0 && (
+              <div className="mb-6">
+                <h3 className="font-semibold text-sm text-amber-400 mb-3 flex items-center gap-2">
+                  <Star className="w-4 h-4" />
+                  Pendente de avaliação ({pendingReviewable.length})
+                </h3>
+                <div className="space-y-3">
+                  {pendingReviewable.map((b) => (
+                    <div key={b.id}>
+                      {reviewingBooking === b.id ? (
+                        <ReviewForm
+                          booking={b}
+                          onSuccess={() => {
+                            setCompletedReviews(prev => new Set([...prev, b.id]))
+                            setReviewingBooking(null)
+                          }}
+                          onCancel={() => setReviewingBooking(null)}
+                        />
+                      ) : (
+                        <div className="glass rounded-xl p-4 flex items-center gap-4 border border-amber-500/10">
+                          <div className="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center flex-shrink-0 font-bold text-amber-400">
+                            {b.professional?.user?.name?.[0] ?? 'P'}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-sm">{b.professional?.user?.name}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {fmtDate(b.date)} — {b.durationHours}h
+                            </p>
+                          </div>
+                          <Button size="sm" className="gradient-brand text-white h-8 text-xs gap-1 flex-shrink-0"
+                            onClick={() => setReviewingBooking(b.id)}>
+                            <Star className="w-3 h-3" /> Avaliar
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                <div className="border-t border-white/10 mt-6 mb-4" />
+              </div>
+            )}
+
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-semibold">Meus agendamentos</h2>
               <div className="flex gap-2 text-xs text-muted-foreground">
@@ -255,16 +339,62 @@ export default function ClientDashboard() {
 
           {/* Favoritos */}
           <TabsContent value="favorites">
-            <div className="flex flex-col items-center justify-center py-16 text-center">
-              <div className="w-16 h-16 rounded-2xl glass flex items-center justify-center mb-4">
-                <Heart className="w-8 h-8 text-muted-foreground" />
+            {favoritesLoading ? (
+              <div className="flex items-center justify-center py-16">
+                <Loader2 className="w-6 h-6 animate-spin text-brand-400" />
               </div>
-              <h3 className="font-semibold mb-1">Nenhum favorito ainda</h3>
-              <p className="text-sm text-muted-foreground mb-6 max-w-xs">Salve perfis para acessar rapidamente depois</p>
-              <Link href="/search">
-                <Button className="gradient-brand text-white gap-2"><Heart className="w-4 h-4" /> Explorar perfis</Button>
-              </Link>
-            </div>
+            ) : favorites.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 text-center">
+                <div className="w-16 h-16 rounded-2xl glass flex items-center justify-center mb-4">
+                  <Heart className="w-8 h-8 text-muted-foreground" />
+                </div>
+                <h3 className="font-semibold mb-1">Nenhum favorito ainda</h3>
+                <p className="text-sm text-muted-foreground mb-6 max-w-xs">Salve perfis para acessar rapidamente depois</p>
+                <Link href="/search">
+                  <Button className="gradient-brand text-white gap-2"><Heart className="w-4 h-4" /> Explorar perfis</Button>
+                </Link>
+              </div>
+            ) : (
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {favorites.map((fav) => {
+                  const pro = fav.professional
+                  const proName = pro.user?.name ?? 'Profissional'
+                  return (
+                    <Link key={fav.id} href={`/profile/${pro.slug}`}>
+                      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+                        className="glass rounded-xl p-4 hover:bg-white/5 transition-colors cursor-pointer">
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className="w-12 h-12 rounded-xl bg-brand-500/20 flex items-center justify-center text-brand-400 font-bold text-lg flex-shrink-0">
+                            {proName[0]}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold truncate">{proName}</p>
+                            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                              <MapPin className="w-3 h-3" />
+                              <span className="truncate">{pro.city}</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1 text-xs">
+                            <Star className="w-3.5 h-3.5 text-yellow-400 fill-yellow-400" />
+                            <span className="font-medium">{pro.rating?.toFixed(1) ?? '—'}</span>
+                          </div>
+                          <p className="text-sm font-bold text-brand-400">R$ {pro.pricePerHour}/h</p>
+                        </div>
+                        {pro.categories?.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            {pro.categories.slice(0, 2).map(c => (
+                              <Badge key={c.name} className="text-[10px] bg-white/5 border-0">{c.name}</Badge>
+                            ))}
+                          </div>
+                        )}
+                      </motion.div>
+                    </Link>
+                  )
+                })}
+              </div>
+            )}
           </TabsContent>
         </Tabs>
       </div>
