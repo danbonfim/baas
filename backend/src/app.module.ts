@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common'
+import { APP_GUARD } from '@nestjs/core'
 import { ConfigModule } from '@nestjs/config'
-import { ThrottlerModule } from '@nestjs/throttler'
+import { ScheduleModule } from '@nestjs/schedule'
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler'
 import { PrismaService } from './prisma.service'
 import { AuthModule } from './auth/auth.module'
 import { UsersModule } from './users/users.module'
@@ -12,11 +14,19 @@ import { ChatModule } from './chat/chat.module'
 import { AdminModule } from './admin/admin.module'
 import { ReviewsModule } from './reviews/reviews.module'
 import { NotificationsModule } from './notifications/notifications.module'
+import { SafetyModule } from './safety/safety.module'
+import { KycModule } from './kyc/kyc.module'
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
-    ThrottlerModule.forRoot([{ ttl: 60000, limit: 100 }]),
+    ScheduleModule.forRoot(),
+    ThrottlerModule.forRoot([
+      // Global default: 100 requests per minute per IP
+      { name: 'default', ttl: 60_000, limit: 100 },
+      // Tighter limit for sensitive endpoints (login, mfa, panic) — applied per-route via @Throttle
+      { name: 'sensitive', ttl: 60_000, limit: 10 },
+    ]),
     AuthModule,
     UsersModule,
     ProfessionalsModule,
@@ -27,8 +37,13 @@ import { NotificationsModule } from './notifications/notifications.module'
     AdminModule,
     ReviewsModule,
     NotificationsModule,
+    SafetyModule,
+    KycModule,
   ],
-  providers: [PrismaService],
+  providers: [
+    PrismaService,
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
+  ],
   exports: [PrismaService],
 })
 export class AppModule {}

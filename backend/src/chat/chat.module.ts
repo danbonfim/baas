@@ -20,6 +20,6 @@ import { ConfigModule, ConfigService } from '@nestjs/config'
   ],
   controllers: [ChatController],
   providers: [ChatService, ChatGateway, PrismaService],
-  exports: [ChatGateway],
+  exports: [ChatGateway, ChatService],
 })
 export class ChatModule {}

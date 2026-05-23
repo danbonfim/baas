@@ -51,31 +51,56 @@ enum BoostStatus {
   EXPIRED
 }
 
+enum SafetyCheckinStatus {
+  PENDING
+  CONFIRMED
+  MISSED
+  ESCALATED
+}
+
+enum PanicAlertStatus {
+  ACTIVE
+  RESOLVED
+  FALSE_ALARM
+}
+
+enum KycLevel {
+  NONE
+  EMAIL
+  DOCUMENT
+  BIOMETRIC
+  FULL
+}
+
 // ─── USERS ───────────────────────────────────
 
 model User {
-  id           String    @id @default(cuid())
-  email        String    @unique
-  passwordHash String?
-  name         String
-  phone        String?
-  avatar       String?
-  role         UserRole  @default(CLIENT)
-  emailVerified Boolean  @default(false)
-  mfaEnabled   Boolean   @default(false)
-  mfaSecret    String?
-  banned       Boolean   @default(false)
-  bannedReason String?
-  lastLoginAt  DateTime?
-  googleId     String?   @unique
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  id             String    @id @default(cuid())
+  email          String    @unique
+  passwordHash   String?
+  name           String
+  phone          String?
+  avatar         String?
+  role           UserRole  @default(CLIENT)
+  emailVerified  Boolean   @default(false)
+  mfaEnabled     Boolean   @default(false)
+  mfaSecret      String?
+  mfaBackupCodes String[]  @default([])
+  banned         Boolean   @default(false)
+  bannedReason   String?
+  lastLoginAt    DateTime?
+  googleId       String?   @unique
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
-  professional  Professional?
-  client        Client?
-  sessions      Session[]
-  notifications Notification[]
-  auditLogs     AuditLog[]
+  professional      Professional?
+  client            Client?
+  sessions          Session[]
+  notifications     Notification[]
+  auditLogs         AuditLog[]
+  emergencyContacts EmergencyContact[]
+  panicAlerts       PanicAlert[]
+  loginAttempts     LoginAttempt[]
 
   @@index([email])
   @@index([role])
@@ -99,47 +124,58 @@ model Session {
 // ─── PROFESSIONAL ────────────────────────────
 
 model Professional {
-  id               String    @id @default(cuid())
-  userId           String    @unique
-  slug             String    @unique
-  tagline          String?
-  description      String?   @db.Text
-  age              Int?
-  city             String
-  state            String
-  country          String    @default("BR")
-  lat              Float?
-  lng              Float?
-  verified         Boolean   @default(false)
-  premium          Boolean   @default(false)
-  online           Boolean   @default(false)
-  active           Boolean   @default(true)
-  profileComplete  Boolean   @default(false)
-  pricePerHour     Float?
-  kycStatus        KycStatus @default(PENDING)
-  kycDocuments     Json?
-  stripeAccountId  String?   @unique
-  rating           Float     @default(0)
-  reviewCount      Int       @default(0)
-  viewCount        Int       @default(0)
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
+  id                 String    @id @default(cuid())
+  userId             String    @unique
+  slug               String    @unique
+  tagline            String?
+  description        String?   @db.Text
+  age                Int?
+  city               String
+  state              String
+  country            String    @default("BR")
+  lat                Float?
+  lng                Float?
+  verified           Boolean   @default(false)
+  premium            Boolean   @default(false)
+  online             Boolean   @default(false)
+  active             Boolean   @default(true)
+  profileComplete    Boolean   @default(false)
+  pricePerHour       Float?
+  kycStatus          KycStatus @default(PENDING)
+  kycLevel           KycLevel  @default(NONE)
+  kycDocuments       Json?
+  kycSelfieUrl       String?
+  kycDocumentUrl     String?
+  kycSubmittedAt     DateTime?
+  kycReviewedAt      DateTime?
+  kycReviewerId      String?
+  kycRejectionReason String?
+  stripeAccountId    String?   @unique
+  rating             Float     @default(0)
+  reviewCount        Int       @default(0)
+  viewCount          Int       @default(0)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 
-  user         User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  photos       Photo[]
-  categories   ProfessionalCategory[]
-  languages    ProfessionalLanguage[]
-  services     ProfessionalService[]
-  availability Availability[]
-  bookings     Booking[]
-  reviews      Review[]
-  boosts       Boost[]
-  earnings     Earning[]
+  user           User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  photos         Photo[]
+  categories     ProfessionalCategory[]
+  languages      ProfessionalLanguage[]
+  services       ProfessionalService[]
+  availability   Availability[]
+  bookings       Booking[]
+  reviews        Review[]
+  boosts         Boost[]
+  earnings       Earning[]
+  safetyCheckins SafetyCheckin[]
+  clientReviews  ClientReview[]
+  blockedClients BlockedClient[]
 
   @@index([city])
   @@index([verified])
   @@index([rating])
   @@index([pricePerHour])
+  @@index([kycLevel])
 }
 
 model Photo {
@@ -210,21 +246,30 @@ model Boost {
 // ─── CLIENT ──────────────────────────────────
 
 model Client {
-  id               String  @id @default(cuid())
-  userId           String  @unique
-  credits          Int     @default(0)
-  balance          Float   @default(0)
-  cashback         Float   @default(0)
-  stripeCustomerId String? @unique
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  id                    String   @id @default(cuid())
+  userId                String   @unique
+  credits               Int      @default(0)
+  balance               Float    @default(0)
+  cashback              Float    @default(0)
+  stripeCustomerId      String?  @unique
+  reputationScore       Float    @default(0)
+  completedBookings     Int      @default(0)
+  cancelledBookings     Int      @default(0)
+  noShowCount           Int      @default(0)
+  averageRatingFromPros Float    @default(0)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
 
-  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  bookings     Booking[]
-  reviews      Review[]
-  subscription Subscription?
-  favorites    Favorite[]
-  transactions Transaction[]
+  user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bookings      Booking[]
+  reviews       Review[]
+  subscription  Subscription?
+  favorites     Favorite[]
+  transactions  Transaction[]
+  clientReviews ClientReview[]
+  blockedBy     BlockedClient[]
+
+  @@index([reputationScore])
 }
 
 model Favorite {
@@ -286,10 +331,12 @@ model Booking {
   createdAt             DateTime      @default(now())
   updatedAt             DateTime      @updatedAt
 
-  client       Client       @relation(fields: [clientId], references: [id])
-  professional Professional @relation(fields: [professionalId], references: [id])
-  review       Review?
-  messages     Message[]
+  client         Client          @relation(fields: [clientId], references: [id])
+  professional   Professional    @relation(fields: [professionalId], references: [id])
+  review         Review?
+  clientReview   ClientReview?
+  messages       Message[]
+  safetyCheckins SafetyCheckin[]
 
   @@index([clientId])
   @@index([professionalId])
@@ -300,15 +347,15 @@ model Booking {
 // ─── REVIEWS ─────────────────────────────────
 
 model Review {
-  id             String   @id @default(cuid())
-  bookingId      String   @unique
+  id             String    @id @default(cuid())
+  bookingId      String    @unique
   clientId       String
   professionalId String
   rating         Int
-  comment        String?  @db.Text
-  replyComment   String?  @db.Text
+  comment        String?   @db.Text
+  replyComment   String?   @db.Text
   repliedAt      DateTime?
-  createdAt      DateTime @default(now())
+  createdAt      DateTime  @default(now())
 
   booking      Booking      @relation(fields: [bookingId], references: [id])
   client       Client       @relation(fields: [clientId], references: [id])
@@ -334,13 +381,13 @@ model Transaction {
 }
 
 model Earning {
-  id             String   @id @default(cuid())
+  id             String    @id @default(cuid())
   professionalId String
   bookingId      String?
   amount         Float
-  status         String   @default("pending")
+  status         String    @default("pending")
   paidOutAt      DateTime?
-  createdAt      DateTime @default(now())
+  createdAt      DateTime  @default(now())
 
   professional Professional @relation(fields: [professionalId], references: [id])
 
@@ -365,21 +412,25 @@ model Conversation {
 }
 
 model Message {
-  id             String   @id @default(cuid())
+  id             String    @id @default(cuid())
   conversationId String
   senderId       String
   bookingId      String?
-  content        String   @db.Text
-  contentType    String   @default("text")
-  read           Boolean  @default(false)
+  content        String    @db.Text
+  contentType    String    @default("text")
+  read           Boolean   @default(false)
   readAt         DateTime?
-  createdAt      DateTime @default(now())
+  expiresAt      DateTime?
+  deleted        Boolean   @default(false)
+  deletedAt      DateTime?
+  createdAt      DateTime  @default(now())
 
   conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   booking      Booking?     @relation(fields: [bookingId], references: [id])
 
   @@index([conversationId])
   @@index([senderId])
+  @@index([expiresAt])
 }
 
 // ─── SYSTEM ──────────────────────────────────
@@ -417,16 +468,131 @@ model AuditLog {
 }
 
 model WebhookEvent {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   provider    String
-  eventId     String   @unique
+  eventId     String    @unique
   eventType   String
   payload     Json
-  processed   Boolean  @default(false)
+  processed   Boolean   @default(false)
   processedAt DateTime?
   error       String?
-  createdAt   DateTime @default(now())
+  createdAt   DateTime  @default(now())
 
   @@index([eventId])
   @@index([processed])
+}
+
+// ─── SAFETY & TRUST ──────────────────────────
+
+model EmergencyContact {
+  id           String   @id @default(cuid())
+  userId       String
+  name         String
+  phone        String
+  relationship String?
+  isPrimary    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model SafetyCheckin {
+  id              String              @id @default(cuid())
+  professionalId  String
+  bookingId       String?
+  status          SafetyCheckinStatus @default(PENDING)
+  expectedAt      DateTime
+  confirmedAt     DateTime?
+  lat             Float?
+  lng             Float?
+  notes           String?
+  escalatedAt     DateTime?
+  escalationLevel Int                 @default(0)
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  professional Professional @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  booking      Booking?     @relation(fields: [bookingId], references: [id])
+
+  @@index([professionalId])
+  @@index([bookingId])
+  @@index([status, expectedAt])
+}
+
+model PanicAlert {
+  id               String           @id @default(cuid())
+  userId           String
+  bookingId        String?
+  status           PanicAlertStatus @default(ACTIVE)
+  triggeredAt      DateTime         @default(now())
+  resolvedAt       DateTime?
+  lat              Float?
+  lng              Float?
+  accuracy         Float?
+  message          String?          @db.Text
+  contactsNotified Json?
+  audioUrl         String?
+  resolution       String?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+}
+
+model ClientReview {
+  id             String   @id @default(cuid())
+  bookingId      String   @unique
+  clientId       String
+  professionalId String
+  rating         Int
+  punctuality    Int?
+  respectful     Boolean  @default(true)
+  paidOnTime     Boolean  @default(true)
+  comment        String?  @db.Text
+  isPrivate      Boolean  @default(true)
+  createdAt      DateTime @default(now())
+
+  booking      Booking      @relation(fields: [bookingId], references: [id])
+  client       Client       @relation(fields: [clientId], references: [id])
+  professional Professional @relation(fields: [professionalId], references: [id])
+
+  @@index([clientId])
+  @@index([professionalId])
+}
+
+model BlockedClient {
+  id             String   @id @default(cuid())
+  professionalId String
+  clientId       String
+  reason         String?
+  createdAt      DateTime @default(now())
+
+  professional Professional @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  client       Client       @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@unique([professionalId, clientId])
+  @@index([professionalId])
+  @@index([clientId])
+}
+
+model LoginAttempt {
+  id         String   @id @default(cuid())
+  userId     String?
+  email      String
+  ip         String?
+  userAgent  String?
+  success    Boolean
+  failReason String?
+  createdAt  DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([email, createdAt])
+  @@index([ip, createdAt])
 }
