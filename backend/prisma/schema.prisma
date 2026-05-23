@@ -201,6 +201,7 @@ model Professional {
   tipsReceived   Tip[]
   subscribers    ProSubscription[]
   hourPacks      HourPack[]
+  travelModes    TravelMode[]
 
   @@index([city])
   @@index([verified])
@@ -300,6 +301,7 @@ model Client {
   bookings          Booking[]
   reviews           Review[]
   subscription      Subscription?
+  preferences       ClientPreference?
   favorites         Favorite[]
   transactions      Transaction[]
   clientReviews     ClientReview[]
@@ -806,5 +808,48 @@ model HourPackPurchase {
   client Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
 
   @@index([clientId])
+  @@index([professionalId])
+}
+
+// ─── DISCOVERY & MATCHING ────────────────────
+
+model ClientPreference {
+  id                  String   @id @default(cuid())
+  clientId            String   @unique
+  ageMin              Int?
+  ageMax              Int?
+  preferredCities     String[] @default([])
+  preferredCategories String[] @default([])
+  preferredLanguages  String[] @default([])
+  preferredServices   String[] @default([])
+  maxPricePerHour     Float?
+  minRating           Float?
+  onlyVerified        Boolean  @default(false)
+  preferOnline        Boolean  @default(false)
+  updatedAt           DateTime @updatedAt
+  createdAt           DateTime @default(now())
+
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+}
+
+model TravelMode {
+  id             String   @id @default(cuid())
+  professionalId String
+  city           String
+  state          String
+  country        String   @default("BR")
+  lat            Float?
+  lng            Float?
+  startsAt       DateTime
+  endsAt         DateTime
+  notes          String?
+  active         Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  professional Professional @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+
+  @@index([active, startsAt, endsAt])
+  @@index([city])
   @@index([professionalId])
 }

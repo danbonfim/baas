@@ -21,6 +21,7 @@ import { BoostModule } from './boost/boost.module'
 import { TipsModule } from './tips/tips.module'
 import { ContentModule } from './content/content.module'
 import { ProSubscriptionModule } from './pro-subscription/pro-subscription.module'
+import { DiscoveryModule } from './discovery/discovery.module'
 
 @Module({
   imports: [
@@ -49,6 +50,7 @@ import { ProSubscriptionModule } from './pro-subscription/pro-subscription.modul
     TipsModule,
     ContentModule,
     ProSubscriptionModule,
+    DiscoveryModule,
   ],
   providers: [
     PrismaService,
