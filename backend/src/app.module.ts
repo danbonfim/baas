@@ -17,6 +17,10 @@ import { NotificationsModule } from './notifications/notifications.module'
 import { SafetyModule } from './safety/safety.module'
 import { KycModule } from './kyc/kyc.module'
 import { EmailModule } from './email/email.module'
+import { BoostModule } from './boost/boost.module'
+import { TipsModule } from './tips/tips.module'
+import { ContentModule } from './content/content.module'
+import { ProSubscriptionModule } from './pro-subscription/pro-subscription.module'
 
 @Module({
   imports: [
@@ -41,6 +45,10 @@ import { EmailModule } from './email/email.module'
     NotificationsModule,
     SafetyModule,
     KycModule,
+    BoostModule,
+    TipsModule,
+    ContentModule,
+    ProSubscriptionModule,
   ],
   providers: [
     PrismaService,

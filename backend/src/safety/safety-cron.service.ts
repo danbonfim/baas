@@ -3,6 +3,8 @@ import { Cron, CronExpression } from '@nestjs/schedule'
 import { SafetyService } from './safety.service'
 import { ChatService } from '../chat/chat.service'
 import { VerificationService } from '../auth/verification.service'
+import { BoostService } from '../boost/boost.service'
+import { ProSubscriptionService } from '../pro-subscription/pro-subscription.service'
 
 @Injectable()
 export class SafetyCronService {
@@ -12,7 +14,29 @@ export class SafetyCronService {
     private safety: SafetyService,
     private chat: ChatService,
     private verification: VerificationService,
+    private boost: BoostService,
+    private proSubs: ProSubscriptionService,
   ) {}
+
+  @Cron(CronExpression.EVERY_30_MINUTES)
+  async expireBoosts() {
+    try {
+      const r = await this.boost.expireOldBoosts()
+      if (r.expired > 0) this.logger.log(`[BOOST] Expired ${r.expired} old boosts`)
+    } catch (err) {
+      this.logger.error('[BOOST] Failed to expire boosts', err)
+    }
+  }
+
+  @Cron(CronExpression.EVERY_HOUR)
+  async expireSubscriptions() {
+    try {
+      const r = await this.proSubs.processExpiredSubscriptions()
+      if (r.expired > 0) this.logger.log(`[PROSUB] Expired ${r.expired} subscriptions`)
+    } catch (err) {
+      this.logger.error('[PROSUB] Failed to expire subscriptions', err)
+    }
+  }
 
   @Cron(CronExpression.EVERY_HOUR)
   async purgeExpiredCodes() {

@@ -72,6 +72,25 @@ enum KycLevel {
   FULL
 }
 
+enum ContentType {
+  PHOTO
+  VIDEO
+  AUDIO
+}
+
+enum BoostType {
+  STANDARD // 24h, R$50
+  PREMIUM // 7d, R$200
+  ULTRA // 30d, R$700
+}
+
+enum ProSubscriptionStatus {
+  ACTIVE
+  CANCELLED
+  PAST_DUE
+  EXPIRED
+}
+
 // ─── USERS ───────────────────────────────────
 
 model User {
@@ -157,6 +176,13 @@ model Professional {
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
+  // ─── MONETIZATION FIELDS ────────────────────
+  monthlySubscriptionPrice Float? // for individual subscription tier (like OnlyFans)
+  subscriptionEnabled      Boolean @default(false)
+  totalEarnings            Float   @default(0)
+  totalTipsReceived        Float   @default(0)
+  subscriberCount          Int     @default(0)
+
   user           User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
   photos         Photo[]
   categories     ProfessionalCategory[]
@@ -170,12 +196,18 @@ model Professional {
   safetyCheckins SafetyCheckin[]
   clientReviews  ClientReview[]
   blockedClients BlockedClient[]
+  premiumContent PremiumContent[]
+  stories        Story[]
+  tipsReceived   Tip[]
+  subscribers    ProSubscription[]
+  hourPacks      HourPack[]
 
   @@index([city])
   @@index([verified])
   @@index([rating])
   @@index([pricePerHour])
   @@index([kycLevel])
+  @@index([subscriptionEnabled])
 }
 
 model Photo {
@@ -231,16 +263,20 @@ model ProfessionalService {
 model Boost {
   id              String      @id @default(cuid())
   professionalId  String
+  type            BoostType   @default(STANDARD)
   status          BoostStatus @default(ACTIVE)
+  startsAt        DateTime    @default(now())
   endsAt          DateTime
   paidAmount      Float
+  multiplier      Float       @default(2.0) // search ranking multiplier
   stripePaymentId String?
   createdAt       DateTime    @default(now())
 
-  professional Professional @relation(fields: [professionalId], references: [id])
+  professional Professional @relation(fields: [professionalId], references: [id], onDelete: Cascade)
 
   @@index([professionalId])
   @@index([status, endsAt])
+  @@index([type])
 }
 
 // ─── CLIENT ──────────────────────────────────
@@ -260,14 +296,19 @@ model Client {
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
 
-  user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  bookings      Booking[]
-  reviews       Review[]
-  subscription  Subscription?
-  favorites     Favorite[]
-  transactions  Transaction[]
-  clientReviews ClientReview[]
-  blockedBy     BlockedClient[]
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bookings          Booking[]
+  reviews           Review[]
+  subscription      Subscription?
+  favorites         Favorite[]
+  transactions      Transaction[]
+  clientReviews     ClientReview[]
+  blockedBy         BlockedClient[]
+  contentUnlocks    ContentUnlock[]
+  tipsSent          Tip[]
+  proSubscriptions  ProSubscription[]
+  storyViews        StoryView[]
+  hourPackPurchases HourPackPurchase[]
 
   @@index([reputationScore])
 }
@@ -586,7 +627,7 @@ model VerificationCode {
   id        String   @id @default(cuid())
   email     String
   codeHash  String
-  purpose   String   // 'REGISTER' | 'PASSWORD_RESET' | 'EMAIL_CHANGE'
+  purpose   String // 'REGISTER' | 'PASSWORD_RESET' | 'EMAIL_CHANGE'
   attempts  Int      @default(0)
   used      Boolean  @default(false)
   ip        String?
@@ -611,4 +652,159 @@ model LoginAttempt {
 
   @@index([email, createdAt])
   @@index([ip, createdAt])
+}
+
+// ─── MONETIZATION ────────────────────────────
+
+model PremiumContent {
+  id              String      @id @default(cuid())
+  professionalId  String
+  type            ContentType
+  url             String
+  thumbnailUrl    String?
+  blurUrl         String?
+  title           String?
+  description     String?     @db.Text
+  price           Float
+  durationSeconds Int?
+  visible         Boolean     @default(true)
+  unlockCount     Int         @default(0)
+  totalRevenue    Float       @default(0)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  professional Professional    @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  unlocks      ContentUnlock[]
+
+  @@index([professionalId])
+  @@index([visible, createdAt])
+}
+
+model ContentUnlock {
+  id                    String   @id @default(cuid())
+  contentId             String
+  clientId              String
+  amount                Float
+  platformFeeAmount     Float
+  professionalAmount    Float
+  stripePaymentIntentId String?
+  createdAt             DateTime @default(now())
+
+  content PremiumContent @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  client  Client         @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@unique([contentId, clientId])
+  @@index([clientId])
+  @@index([contentId])
+}
+
+model Tip {
+  id                    String   @id @default(cuid())
+  clientId              String
+  professionalId        String
+  amount                Float
+  platformFeeAmount     Float
+  professionalAmount    Float
+  message               String?
+  isPublic              Boolean  @default(true)
+  stripePaymentIntentId String?  @unique
+  createdAt             DateTime @default(now())
+
+  client       Client       @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  professional Professional @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+
+  @@index([clientId])
+  @@index([professionalId, createdAt])
+}
+
+model ProSubscription {
+  id                   String                @id @default(cuid())
+  clientId             String
+  professionalId       String
+  monthlyPrice         Float
+  status               ProSubscriptionStatus @default(ACTIVE)
+  startedAt            DateTime              @default(now())
+  currentPeriodStart   DateTime              @default(now())
+  currentPeriodEnd     DateTime
+  cancelAtPeriodEnd    Boolean               @default(false)
+  cancelledAt          DateTime?
+  stripeSubscriptionId String?               @unique
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+
+  client       Client       @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  professional Professional @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+
+  @@unique([clientId, professionalId])
+  @@index([clientId, status])
+  @@index([professionalId, status])
+}
+
+model Story {
+  id              String      @id @default(cuid())
+  professionalId  String
+  type            ContentType @default(PHOTO)
+  url             String
+  thumbnailUrl    String?
+  caption         String?
+  subscribersOnly Boolean     @default(false)
+  viewCount       Int         @default(0)
+  expiresAt       DateTime
+  createdAt       DateTime    @default(now())
+
+  professional Professional @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  views        StoryView[]
+
+  @@index([professionalId])
+  @@index([expiresAt])
+}
+
+model StoryView {
+  id       String   @id @default(cuid())
+  storyId  String
+  userId   String
+  viewedAt DateTime @default(now())
+
+  story  Story  @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  client Client @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([storyId, userId])
+  @@index([userId])
+}
+
+model HourPack {
+  id             String   @id @default(cuid())
+  professionalId String
+  hours          Int
+  pricePerHour   Float
+  totalPrice     Float
+  discountPct    Float
+  active         Boolean  @default(true)
+  createdAt      DateTime @default(now())
+
+  professional Professional       @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  purchases    HourPackPurchase[]
+
+  @@index([professionalId, active])
+}
+
+model HourPackPurchase {
+  id                    String    @id @default(cuid())
+  packId                String
+  clientId              String
+  professionalId        String
+  hoursRemaining        Float
+  totalHours            Int
+  amountPaid            Float
+  platformFeeAmount     Float
+  professionalAmount    Float
+  expiresAt             DateTime?
+  stripePaymentIntentId String?
+  createdAt             DateTime  @default(now())
+
+  pack   HourPack @relation(fields: [packId], references: [id])
+  client Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([clientId])
+  @@index([professionalId])
 }
