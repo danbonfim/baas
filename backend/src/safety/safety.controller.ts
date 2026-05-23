@@ -25,6 +25,7 @@ export class SafetyController {
       properties: {
         name: { type: 'string' },
         phone: { type: 'string', example: '+5511999999999' },
+        email: { type: 'string', example: 'mae@email.com', description: 'Recomendado — emergência via email' },
         relationship: { type: 'string', example: 'mãe' },
         isPrimary: { type: 'boolean' },
       },
@@ -33,7 +34,7 @@ export class SafetyController {
   })
   createContact(
     @Request() req: any,
-    @Body() body: { name: string; phone: string; relationship?: string; isPrimary?: boolean },
+    @Body() body: { name: string; phone: string; email?: string; relationship?: string; isPrimary?: boolean },
   ) {
     return this.safety.createContact(req.user.sub, body)
   }

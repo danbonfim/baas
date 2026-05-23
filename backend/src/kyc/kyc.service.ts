@@ -1,9 +1,15 @@
-import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common'
+import { Injectable, NotFoundException, BadRequestException, ForbiddenException, Logger } from '@nestjs/common'
 import { PrismaService } from '../prisma.service'
+import { EmailService } from '../email/email.service'
 
 @Injectable()
 export class KycService {
-  constructor(private prisma: PrismaService) {}
+  private readonly logger = new Logger(KycService.name)
+
+  constructor(
+    private prisma: PrismaService,
+    private email: EmailService,
+  ) {}
 
   /**
    * Professional submits selfie + document URLs (already uploaded to S3/Cloudinary).
@@ -63,7 +69,12 @@ export class KycService {
         kycReviewerId: adminId,
         kycRejectionReason: null,
       },
+      include: { user: { select: { email: true, name: true } } },
     })
+
+    this.email
+      .sendKycResult({ email: pro.user.email, name: pro.user.name }, true)
+      .catch((err) => this.logger.error(`KYC approved email failed: ${err.message}`))
 
     await this.prisma.notification.create({
       data: {
@@ -101,7 +112,12 @@ export class KycService {
         kycReviewerId: adminId,
         kycRejectionReason: reason,
       },
+      include: { user: { select: { email: true, name: true } } },
     })
+
+    this.email
+      .sendKycResult({ email: pro.user.email, name: pro.user.name }, false, reason)
+      .catch((err) => this.logger.error(`KYC rejected email failed: ${err.message}`))
 
     await this.prisma.notification.create({
       data: {

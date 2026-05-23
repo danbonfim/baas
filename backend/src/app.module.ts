@@ -16,10 +16,12 @@ import { ReviewsModule } from './reviews/reviews.module'
 import { NotificationsModule } from './notifications/notifications.module'
 import { SafetyModule } from './safety/safety.module'
 import { KycModule } from './kyc/kyc.module'
+import { EmailModule } from './email/email.module'
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    EmailModule,
     ScheduleModule.forRoot(),
     ThrottlerModule.forRoot([
       // Global default: 100 requests per minute per IP

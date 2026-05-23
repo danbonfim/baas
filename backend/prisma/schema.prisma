@@ -489,6 +489,7 @@ model EmergencyContact {
   userId       String
   name         String
   phone        String
+  email        String?
   relationship String?
   isPrimary    Boolean  @default(false)
   createdAt    DateTime @default(now())

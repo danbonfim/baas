@@ -1,9 +1,15 @@
-import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common'
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException, Logger } from '@nestjs/common'
 import { PrismaService } from '../prisma.service'
+import { EmailService } from '../email/email.service'
 
 @Injectable()
 export class SafetyService {
-  constructor(private prisma: PrismaService) {}
+  private readonly logger = new Logger(SafetyService.name)
+
+  constructor(
+    private prisma: PrismaService,
+    private email: EmailService,
+  ) {}
 
   // ─── Emergency Contacts ────────────────────────
 
@@ -14,8 +20,10 @@ export class SafetyService {
     })
   }
 
-  async createContact(userId: string, data: { name: string; phone: string; relationship?: string; isPrimary?: boolean }) {
-    // Limit to 3 contacts per user
+  async createContact(
+    userId: string,
+    data: { name: string; phone: string; email?: string; relationship?: string; isPrimary?: boolean },
+  ) {
     const existing = await this.prisma.emergencyContact.count({ where: { userId } })
     if (existing >= 3) throw new BadRequestException('Máximo de 3 contatos de emergência')
 
@@ -127,10 +135,11 @@ export class SafetyService {
         },
       })
 
-      // Create a notification for the user
+      const user = c.professional.user
+
       await this.prisma.notification.create({
         data: {
-          userId: c.professional.userId,
+          userId: user.id,
           title: '⚠️ Check-in de segurança não confirmado',
           body: `Você não confirmou seu check-in. Por favor, confirme agora.`,
           type: 'SAFETY_CHECKIN_MISSED',
@@ -138,7 +147,29 @@ export class SafetyService {
         },
       })
 
-      escalated.push({ checkin: updated, contacts: c.professional.user.emergencyContacts })
+      // Email cascade:
+      // Level 1-2: notify the professional themselves
+      // Level 3+: notify all emergency contacts with email
+      if (newLevel < 3) {
+        this.email
+          .sendCheckinEscalation(
+            { email: user.email, name: user.name },
+            { professionalName: user.name, expectedAt: c.expectedAt, level: newLevel, lat: c.lat, lng: c.lng },
+          )
+          .catch((err) => this.logger.error(`Self checkin email failed: ${err.message}`))
+      } else {
+        for (const contact of user.emergencyContacts) {
+          if (!contact.email) continue
+          this.email
+            .sendCheckinEscalation(
+              { email: contact.email, name: contact.name },
+              { professionalName: user.name, expectedAt: c.expectedAt, level: newLevel, lat: c.lat, lng: c.lng },
+            )
+            .catch((err) => this.logger.error(`Contact checkin email failed: ${err.message}`))
+        }
+      }
+
+      escalated.push({ checkin: updated, contacts: user.emergencyContacts })
     }
 
     return { escalatedCount: escalated.length, escalated }
@@ -226,8 +257,31 @@ export class SafetyService {
       },
     })
 
-    // TODO: integration with SMS/Twilio/Email provider goes here.
-    // For now we return the alert; the notification job/worker will pick it up.
+    // Fire-and-forget email notifications to all emergency contacts (with email)
+    this.email
+      .sendPanicAlerts(
+        user.emergencyContacts.map((c) => ({ name: c.name, phone: c.phone, email: c.email ?? undefined })),
+        {
+          userName: user.name,
+          userPhone: user.phone,
+          lat: data.lat,
+          lng: data.lng,
+          message: data.message,
+          triggeredAt: alert.triggeredAt,
+        },
+      )
+      .then((results) => {
+        this.logger.log(`Panic alert ${alert.id}: emails sent → ${JSON.stringify(results)}`)
+        // Update the alert with email delivery status
+        return this.prisma.panicAlert
+          .update({
+            where: { id: alert.id },
+            data: { contactsNotified: { contacts: contactsSnapshot, emailResults: results } as any },
+          })
+          .catch(() => {})
+      })
+      .catch((err) => this.logger.error('Email panic notification failed', err))
+
     return alert
   }
 
