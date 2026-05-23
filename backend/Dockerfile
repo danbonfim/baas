@@ -29,4 +29,4 @@ COPY prisma.config.js ./
 EXPOSE 3001
 
 # Run migrations then start
-CMD npx prisma migrate deploy && node dist/main
+CMD npx prisma migrate deploy && node dist/src/main
