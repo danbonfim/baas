@@ -582,6 +582,21 @@ model BlockedClient {
   @@index([clientId])
 }
 
+model VerificationCode {
+  id        String   @id @default(cuid())
+  email     String
+  codeHash  String
+  purpose   String   // 'REGISTER' | 'PASSWORD_RESET' | 'EMAIL_CHANGE'
+  attempts  Int      @default(0)
+  used      Boolean  @default(false)
+  ip        String?
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([email, purpose, used])
+  @@index([expiresAt])
+}
+
 model LoginAttempt {
   id         String   @id @default(cuid())
   userId     String?

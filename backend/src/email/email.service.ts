@@ -84,6 +84,28 @@ export class EmailService {
   }
 
   /**
+   * Send a 6-digit verification code for signup or password reset.
+   * The code expires in 10 minutes.
+   */
+  async sendVerificationCode(
+    to: string,
+    code: string,
+    purpose: 'REGISTER' | 'PASSWORD_RESET',
+  ): Promise<{ success: boolean; error?: string }> {
+    const isRegister = purpose === 'REGISTER'
+    const subject = isRegister
+      ? `Seu código de cadastro BAAS: ${code}`
+      : `Recuperação de senha BAAS: ${code}`
+
+    const html = this.renderVerificationCodeHtml(code, purpose)
+    const text = isRegister
+      ? `Seu código de cadastro é: ${code}\n\nUse-o como senha para finalizar o cadastro. Expira em 10 minutos.`
+      : `Seu código de recuperação é: ${code}\n\nExpira em 10 minutos. Se você não solicitou, ignore este email.`
+
+    return this.send({ to, subject, html, text })
+  }
+
+  /**
    * Generic KYC notification (approved / rejected).
    */
   async sendKycResult(
@@ -239,6 +261,40 @@ ${d.level >= 3
   ? `${d.professionalName} não confirmou check-in de segurança (nível ${d.level}). Esperado em ${d.expectedAt.toLocaleString('pt-BR')}.`
   : `Você não confirmou seu check-in. Esperado em ${d.expectedAt.toLocaleString('pt-BR')}. Confirme no app.`}
 `
+  }
+
+  private renderVerificationCodeHtml(code: string, purpose: 'REGISTER' | 'PASSWORD_RESET'): string {
+    const isRegister = purpose === 'REGISTER'
+    const title = isRegister ? 'Confirme seu cadastro' : 'Recupere sua senha'
+    const instruction = isRegister
+      ? 'Use o código abaixo como <strong>senha temporária</strong> para finalizar seu cadastro no app:'
+      : 'Use o código abaixo para definir uma nova senha:'
+
+    return `<!DOCTYPE html>
+<html lang="pt-BR">
+<head><meta charset="UTF-8"></head>
+<body style="font-family: -apple-system, Arial, sans-serif; line-height: 1.5; color: #1a1a1a; max-width: 600px; margin: 0 auto; padding: 20px; background:#f9fafb;">
+  <div style="background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; padding: 24px; border-radius: 12px 12px 0 0;">
+    <h1 style="margin: 0; font-size: 22px;">${title}</h1>
+  </div>
+  <div style="background: white; padding: 32px 24px; border-radius: 0 0 12px 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.06);">
+    <p style="font-size: 16px; margin-top: 0;">Olá,</p>
+    <p style="font-size: 15px;">${instruction}</p>
+    <div style="background: #f3f4f6; border: 2px dashed #6366f1; border-radius: 12px; padding: 24px; text-align: center; margin: 24px 0;">
+      <div style="font-size: 36px; font-weight: 700; letter-spacing: 8px; color: #6366f1; font-family: 'Courier New', monospace;">${code}</div>
+    </div>
+    <p style="font-size: 13px; color: #6b7280;">⏱️ <strong>Expira em 10 minutos.</strong></p>
+    <p style="font-size: 13px; color: #6b7280;">🔒 Não compartilhe este código com ninguém. A equipe BAAS nunca pedirá esse código por telefone ou mensagem.</p>
+    ${
+      !isRegister
+        ? `<p style="font-size: 13px; color: #6b7280;">Se você não solicitou esta recuperação, ignore este email. Sua senha continua a mesma.</p>`
+        : ''
+    }
+    <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 24px 0;">
+    <p style="font-size: 12px; color: #9ca3af; text-align: center;">BAAS — Plataforma segura para profissionais</p>
+  </div>
+</body>
+</html>`
   }
 
   private renderKycApprovedHtml(name: string): string {

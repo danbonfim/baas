@@ -12,10 +12,63 @@ import { JwtAuthGuard } from './jwt-auth.guard'
 export class AuthController {
   constructor(private auth: AuthService, private mfa: MfaService) {}
 
+  // ─── Email-code-based signup ──────────────────
+
+  @Post('register/request-code')
+  @HttpCode(200)
+  @Throttle({ sensitive: { limit: 5, ttl: 60_000 } })
+  @ApiOperation({
+    summary: 'Step 1: Request a 6-digit code via email to start signup. The code IS the temporary password used in step 2.',
+  })
+  @ApiBody({
+    schema: {
+      properties: { email: { type: 'string', format: 'email' } },
+      required: ['email'],
+    },
+  })
+  requestRegisterCode(@Body('email') email: string, @Ip() ip: string) {
+    return this.auth.requestRegisterCode(email, ip)
+  }
+
   @Post('register')
-  @ApiOperation({ summary: 'Register new user (client or professional)' })
+  @ApiOperation({
+    summary:
+      'Step 2: Finalize signup. The "password" field must be the 6-digit code received by email. It becomes the initial password — user can change it later.',
+  })
   register(@Body() dto: RegisterDto) {
-    return this.auth.register(dto)
+    return this.auth.registerWithCode(dto)
+  }
+
+  // ─── Password reset ───────────────────────────
+
+  @Post('forgot-password')
+  @HttpCode(200)
+  @Throttle({ sensitive: { limit: 5, ttl: 60_000 } })
+  @ApiOperation({
+    summary: 'Send a password-reset code via email. Always returns success (anti-email-enumeration).',
+  })
+  @ApiBody({
+    schema: { properties: { email: { type: 'string', format: 'email' } }, required: ['email'] },
+  })
+  forgotPassword(@Body('email') email: string, @Ip() ip: string) {
+    return this.auth.requestPasswordReset(email, ip)
+  }
+
+  @Post('reset-password')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Verify the code from email and set a new password' })
+  @ApiBody({
+    schema: {
+      properties: {
+        email: { type: 'string', format: 'email' },
+        code: { type: 'string', example: '123456' },
+        newPassword: { type: 'string', minLength: 6 },
+      },
+      required: ['email', 'code', 'newPassword'],
+    },
+  })
+  resetPassword(@Body() body: { email: string; code: string; newPassword: string }) {
+    return this.auth.resetPassword(body.email, body.code, body.newPassword)
   }
 
   @Post('login')

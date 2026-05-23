@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common'
 import { Cron, CronExpression } from '@nestjs/schedule'
 import { SafetyService } from './safety.service'
 import { ChatService } from '../chat/chat.service'
+import { VerificationService } from '../auth/verification.service'
 
 @Injectable()
 export class SafetyCronService {
@@ -10,7 +11,18 @@ export class SafetyCronService {
   constructor(
     private safety: SafetyService,
     private chat: ChatService,
+    private verification: VerificationService,
   ) {}
+
+  @Cron(CronExpression.EVERY_HOUR)
+  async purgeExpiredCodes() {
+    try {
+      const r = await this.verification.purgeExpired()
+      if (r.purged > 0) this.logger.log(`[AUTH] Purged ${r.purged} expired verification codes`)
+    } catch (err) {
+      this.logger.error('[AUTH] Failed to purge expired codes', err)
+    }
+  }
 
   /**
    * Every 5 minutes: find overdue safety check-ins and escalate.
