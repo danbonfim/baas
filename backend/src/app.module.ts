@@ -23,6 +23,7 @@ import { ContentModule } from './content/content.module'
 import { ProSubscriptionModule } from './pro-subscription/pro-subscription.module'
 import { DiscoveryModule } from './discovery/discovery.module'
 import { ProToolsModule } from './pro-tools/pro-tools.module'
+import { UploadsModule } from './uploads/uploads.module'
 
 @Module({
   imports: [
@@ -53,6 +54,7 @@ import { ProToolsModule } from './pro-tools/pro-tools.module'
     ProSubscriptionModule,
     DiscoveryModule,
     ProToolsModule,
+    UploadsModule,
   ],
   providers: [
     PrismaService,
