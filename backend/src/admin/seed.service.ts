@@ -335,6 +335,32 @@ export class SeedService {
   }
 
   /**
+   * Create an admin account. Protected by admin secret.
+   * Returns access token + credentials.
+   */
+  async createAdmin(providedSecret: string, email: string, name: string, password: string) {
+    const secret = process.env.ADMIN_SEED_SECRET
+    if (!secret) throw new ForbiddenException('Disabled: ADMIN_SEED_SECRET not configured')
+    if (providedSecret !== secret) throw new ForbiddenException('Invalid admin secret')
+
+    const existing = await this.prisma.user.findUnique({ where: { email } })
+    if (existing) {
+      // Promote existing user to admin
+      const updated = await this.prisma.user.update({
+        where: { id: existing.id },
+        data: { role: 'ADMIN' },
+      })
+      return { promoted: true, userId: updated.id, email: updated.email, role: updated.role }
+    }
+
+    const passwordHash = await bcrypt.hash(password, 12)
+    const user = await this.prisma.user.create({
+      data: { email, name, passwordHash, role: 'ADMIN', emailVerified: true },
+    })
+    return { created: true, userId: user.id, email: user.email, role: user.role }
+  }
+
+  /**
    * Wipe all demo profiles (by email pattern). Also requires admin secret.
    */
   async wipeDemoData(providedSecret: string) {

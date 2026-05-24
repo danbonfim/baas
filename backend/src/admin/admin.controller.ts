@@ -26,6 +26,17 @@ export class AdminController {
     return this.seed.wipeDemoData(secret)
   }
 
+  @Post('create-admin')
+  @HttpCode(200)
+  @ApiOperation({ summary: '[ADMIN SECRET] Create or promote a user to ADMIN role' })
+  @ApiHeader({ name: 'X-Admin-Secret', required: true })
+  createAdmin(
+    @Headers('x-admin-secret') secret: string,
+    @Body() body: { email: string; name: string; password: string },
+  ) {
+    return this.seed.createAdmin(secret, body.email, body.name, body.password)
+  }
+
   // ─── Regular admin endpoints (JWT-protected) ───────────
 
   @Get('stats')
