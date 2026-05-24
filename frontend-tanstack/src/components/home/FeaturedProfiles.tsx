@@ -1,11 +1,26 @@
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Star, MapPin, Shield, Crown, ArrowRight } from 'lucide-react'
+import { Star, MapPin, Shield, Crown, ArrowRight, Loader2 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { mockProfessionals } from '@/config/mock-data'
 import { Link } from '@tanstack/react-router'
+import { api } from '@/lib/api'
+import type { Professional } from '@/types'
 
-function ProfileCard({ professional, index }: { professional: typeof mockProfessionals[0]; index: number }) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function normalize(raw: any): Professional {
+  return {
+    ...raw,
+    name: raw.user?.name ?? raw.name ?? '',
+    categories: Array.isArray(raw.categories) ? raw.categories.map((c: any) => typeof c === 'string' ? c : c.name) : [],
+    languages: Array.isArray(raw.languages) ? raw.languages.map((l: any) => typeof l === 'string' ? l : l.language) : [],
+    services: Array.isArray(raw.services) ? raw.services.map((s: any) => typeof s === 'string' ? s : s.name) : [],
+    photos: Array.isArray(raw.photos) ? raw.photos.map((p: any) => typeof p === 'string' ? p : p.url) : [],
+    availability: Array.isArray(raw.availability) ? raw.availability : [],
+  }
+}
+
+function ProfileCard({ professional, index }: { professional: Professional; index: number }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -13,11 +28,11 @@ function ProfileCard({ professional, index }: { professional: typeof mockProfess
       viewport={{ once: true }}
       transition={{ delay: index * 0.1 }}
     >
-      <Link to={`/profile/${professional.slug}`}>
+      <Link to="/profile/$slug" params={{ slug: professional.slug }}>
         <div className="group relative rounded-2xl overflow-hidden glass hover:border-brand-500/30 transition-all duration-300 cursor-pointer">
           <div className="relative aspect-[3/4] overflow-hidden">
             <img
-              src={professional.photos[0]}
+              src={professional.photos[0] || `https://i.pravatar.cc/600?u=${professional.slug}`}
               alt={professional.name}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
             />
@@ -79,7 +94,18 @@ function ProfileCard({ professional, index }: { professional: typeof mockProfess
 }
 
 export function FeaturedProfiles() {
-  const featured = mockProfessionals.filter((p) => p.premium).slice(0, 8)
+  const [featured, setFeatured] = useState<Professional[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    api.get('/discovery/search', { params: { verified: true, online: true, limit: 8, sortBy: 'rating' } })
+      .then(({ data }) => {
+        const items = data.items ?? data
+        setFeatured(Array.isArray(items) ? items.map(normalize) : [])
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [])
 
   return (
     <section className="py-20 px-4 sm:px-6">
@@ -98,11 +124,19 @@ export function FeaturedProfiles() {
           </Link>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
-          {featured.map((professional, i) => (
-            <ProfileCard key={professional.id} professional={professional} index={i} />
-          ))}
-        </div>
+        {loading ? (
+          <div className="flex items-center justify-center py-16">
+            <Loader2 className="w-8 h-8 animate-spin text-brand-400" />
+          </div>
+        ) : featured.length === 0 ? (
+          <p className="text-center text-muted-foreground py-10">Nenhuma profissional online no momento</p>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+            {featured.map((professional, i) => (
+              <ProfileCard key={professional.id} professional={professional} index={i} />
+            ))}
+          </div>
+        )}
       </div>
     </section>
   )

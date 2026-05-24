@@ -10,7 +10,6 @@ import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useProfessional } from '@/hooks/useProfessionals'
-import { mockProfessionals } from '@/config/mock-data'
 import { useAuthStore } from '@/store/auth.store'
 import { api, extractError } from '@/lib/api'
 import { useReviews } from '@/hooks/useReviews'
@@ -26,16 +25,14 @@ function ProfilePage() {
   const navigate = useNavigate()
   const { user } = useAuthStore()
 
-  const { professional: apiPro, loading } = useProfessional(slug)
-  const mockPro = mockProfessionals.find((p) => p.slug === slug) ?? mockProfessionals[0]
-  const professional = apiPro ?? mockPro
-  const { reviews } = useReviews(professional.id)
+  const { professional, loading } = useProfessional(slug)
+  const { reviews } = useReviews(professional?.id ?? '')
 
   const [selectedPhoto, setSelectedPhoto] = useState(0)
   const [lightboxOpen, setLightboxOpen] = useState(false)
   const [startingChat, setStartingChat] = useState(false)
 
-  const photos: string[] = Array.isArray(professional.photos) && professional.photos.length > 0
+  const photos: string[] = professional && Array.isArray(professional.photos) && professional.photos.length > 0
     ? professional.photos
     : [`https://picsum.photos/seed/${slug}/600/800`]
 
@@ -43,11 +40,13 @@ function ProfilePage() {
 
   const handleBooking = () => {
     if (!user) { navigate({ to: '/auth/login' }); return }
+    if (!professional) return
     navigate({ to: '/booking', search: { slug, professionalId: professional.id } })
   }
 
   const handleChat = async () => {
     if (!user) { navigate({ to: '/auth/login' }); return }
+    if (!professional) return
     if (user.role !== 'CLIENT') { toast.error('Apenas clientes podem iniciar conversas'); return }
     setStartingChat(true)
     try {
@@ -60,7 +59,7 @@ function ProfilePage() {
     }
   }
 
-  if (loading && !apiPro) {
+  if (loading || !professional) {
     return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-brand-400" /></div>
   }
 

@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Search, MapPin, SlidersHorizontal, Star, Shield, Crown, Grid3X3, LayoutList, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -11,7 +11,6 @@ import { Slider } from '@/components/ui/slider'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { useProfessionals } from '@/hooks/useProfessionals'
-import { mockProfessionals } from '@/config/mock-data'
 import type { Professional } from '@/types'
 
 export const Route = createFileRoute('/search')({
@@ -30,41 +29,17 @@ function SearchPage() {
   const [onlineOnly, setOnlineOnly] = useState(false)
   const [sortBy, setSortBy] = useState('relevance')
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
-  const [useApi, setUseApi] = useState(false)
 
-  const { data: apiData, loading, error } = useProfessionals({
+  const { data: apiData, loading } = useProfessionals({
     city, category, minPrice: priceRange[0], maxPrice: priceRange[1],
     verified: verifiedOnly || undefined, online: onlineOnly || undefined, sortBy,
   })
 
-  useEffect(() => {
-    if (!loading && !error && apiData.length > 0) setUseApi(true)
-  }, [loading, error, apiData])
-
   const filtered = useMemo<Professional[]>(() => {
-    if (useApi && !loading) {
-      if (!query) return apiData
-      const q = query.toLowerCase()
-      return apiData.filter((p) => p.name.toLowerCase().includes(q) || p.city.toLowerCase().includes(q))
-    }
-    let results = [...mockProfessionals]
-    if (query) {
-      const q = query.toLowerCase()
-      results = results.filter((p) => p.name.toLowerCase().includes(q) || p.city.toLowerCase().includes(q) || p.tagline.toLowerCase().includes(q))
-    }
-    if (city !== 'Todas') results = results.filter((p) => p.city === city)
-    if (category !== 'Todas') results = results.filter((p) => p.categories.includes(category))
-    results = results.filter((p) => p.pricePerHour >= priceRange[0] && p.pricePerHour <= priceRange[1])
-    if (verifiedOnly) results = results.filter((p) => p.verified)
-    if (onlineOnly) results = results.filter((p) => p.online)
-    switch (sortBy) {
-      case 'price-asc': results.sort((a, b) => a.pricePerHour - b.pricePerHour); break
-      case 'price-desc': results.sort((a, b) => b.pricePerHour - a.pricePerHour); break
-      case 'rating': results.sort((a, b) => b.rating - a.rating); break
-      case 'newest': results.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()); break
-    }
-    return results
-  }, [useApi, loading, apiData, query, city, category, priceRange, verifiedOnly, onlineOnly, sortBy])
+    if (!query) return apiData
+    const q = query.toLowerCase()
+    return apiData.filter((p) => p.name.toLowerCase().includes(q) || p.city.toLowerCase().includes(q))
+  }, [apiData, query])
 
   return (
     <div className="min-h-screen">

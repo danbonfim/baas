@@ -13,7 +13,6 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useProfessional } from '@/hooks/useProfessionals'
 import { useCreateBooking, usePaymentIntent } from '@/hooks/useBookings'
-import { mockProfessionals } from '@/config/mock-data'
 import { useAuthStore } from '@/store/auth.store'
 import { toast } from 'sonner'
 
@@ -46,9 +45,8 @@ function BookingPage() {
   const slugParam = search.slug
   const profIdParam = search.professionalId
 
-  const { professional: apiPro } = useProfessional(slugParam)
-  const mockPro = mockProfessionals.find((p) => p.slug === slugParam) ?? mockProfessionals[0]
-  const professional = apiPro ?? mockPro
+  const { professional: apiPro, loading: proLoading } = useProfessional(slugParam)
+  const professional = apiPro
 
   const { loading: createLoading, createBooking } = useCreateBooking()
   const [bookingId, setBookingId] = useState<string | null>(null)
@@ -69,7 +67,7 @@ function BookingPage() {
     return d
   })
 
-  const totalAmount = professional.pricePerHour * selectedDuration
+  const totalAmount = (professional?.pricePerHour ?? 0) * selectedDuration
   const platformFee = totalAmount * 0.15
   const daysOfWeek = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
 
@@ -78,7 +76,7 @@ function BookingPage() {
   }, [user, navigate])
 
   const handleCreateBooking = useCallback(async () => {
-    if (selectedDate === null || !selectedTime) return
+    if (selectedDate === null || !selectedTime || !professional) return
     const date = dates[selectedDate]
     const dateStr = date.toISOString().split('T')[0]
     const endTime = addHours(selectedTime, selectedDuration)
@@ -89,7 +87,7 @@ function BookingPage() {
       location: location || undefined, notes: notes || undefined,
     })
     if (booking) { setBookingId(booking.id); setStep(3) }
-  }, [selectedDate, selectedTime, selectedDuration, profIdParam, professional.id, location, notes, dates, createBooking])
+  }, [selectedDate, selectedTime, selectedDuration, profIdParam, professional, location, notes, dates, createBooking])
 
   const handleConfirmPayment = useCallback(async () => {
     if (!bookingId) return
@@ -98,7 +96,7 @@ function BookingPage() {
     setTimeout(() => navigate({ to: '/dashboard/client' }), 2000)
   }, [bookingId, navigate])
 
-  if (!user) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-brand-400" /></div>
+  if (!user || proLoading || !professional) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-brand-400" /></div>
 
   return (
     <div className="min-h-screen pb-20">
