@@ -67,7 +67,7 @@ export function HeroSection() {
                 className="pl-10 h-12 bg-white/5 border-white/10 text-foreground placeholder:text-muted-foreground"
               />
             </div>
-            <Link to={`/search${searchCity ? `?city=${searchCity}` : ''}`}>
+            <Link to="/search" search={searchCity ? { city: searchCity } : {}}>
               <Button size="lg" className="gradient-brand text-white h-12 px-8 hover:opacity-90 w-full sm:w-auto">
                 <Search className="w-5 h-5 mr-2" />
                 Explorar

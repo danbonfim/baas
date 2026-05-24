@@ -1,5 +1,6 @@
 import { createFileRoute, Outlet, redirect } from '@tanstack/react-router'
 import { useAuthStore } from '@/store/auth.store'
+import { PanicButton } from '@/components/PanicButton'
 
 export const Route = createFileRoute('/_authenticated')({
   beforeLoad: () => {
@@ -12,5 +13,11 @@ export const Route = createFileRoute('/_authenticated')({
 })
 
 function AuthenticatedLayout() {
-  return <Outlet />
+  const { user } = useAuthStore()
+  return (
+    <>
+      <Outlet />
+      {user?.role === 'PROFESSIONAL' && <PanicButton />}
+    </>
+  )
 }

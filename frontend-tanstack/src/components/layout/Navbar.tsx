@@ -1,7 +1,7 @@
 import { Link, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Menu, X, Search, Heart, MessageCircle, User, Crown, Sparkles, LogOut, ChevronDown } from 'lucide-react'
+import { Menu, X, Search, Heart, MessageCircle, User, Crown, Sparkles, LogOut, ChevronDown, Settings } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useAuthStore } from '@/store/auth.store'
 import { useAuth } from '@/hooks/useAuth'
@@ -83,6 +83,11 @@ export function Navbar() {
                       <Link to="/chat" onClick={() => setUserMenuOpen(false)}>
                         <div className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-white/10 text-sm cursor-pointer">
                           <MessageCircle className="w-4 h-4 text-brand-400" /> Mensagens
+                        </div>
+                      </Link>
+                      <Link to="/settings" onClick={() => setUserMenuOpen(false)}>
+                        <div className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-white/10 text-sm cursor-pointer">
+                          <Settings className="w-4 h-4 text-brand-400" /> Configurações
                         </div>
                       </Link>
                       <div className="border-t border-white/10 mt-1 pt-1">

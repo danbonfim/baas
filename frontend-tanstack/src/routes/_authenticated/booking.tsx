@@ -14,6 +14,7 @@ import { Label } from '@/components/ui/label'
 import { useProfessional } from '@/hooks/useProfessionals'
 import { useCreateBooking, usePaymentIntent } from '@/hooks/useBookings'
 import { useAuthStore } from '@/store/auth.store'
+import { StripePayment } from '@/components/StripePayment'
 import { toast } from 'sonner'
 
 export const Route = createFileRoute('/_authenticated/booking')({
@@ -221,19 +222,23 @@ function BookingPage() {
                         </div>
                       ) : (
                         <div className="space-y-4">
-                          <div className="p-4 rounded-xl bg-white/5 text-center">
-                            <p className="text-xs text-muted-foreground mb-2">Stripe Elements serão carregados aqui</p>
-                            <p className="text-sm text-brand-400">{clientSecret ? '✓ Payment Intent criado com sucesso' : 'Configure VITE_STRIPE_KEY para ativar'}</p>
-                          </div>
+                          {clientSecret ? (
+                            <StripePayment
+                              clientSecret={clientSecret}
+                              amount={totalAmount}
+                              onSuccess={handleConfirmPayment}
+                              onError={(msg) => toast.error(msg)}
+                              buttonLabel={`Confirmar R$ ${totalAmount.toFixed(2)}`}
+                            />
+                          ) : (
+                            <div className="p-4 rounded-xl bg-white/5 text-center">
+                              <p className="text-sm text-muted-foreground">Configure VITE_STRIPE_PUBLISHABLE_KEY para ativar pagamentos</p>
+                            </div>
+                          )}
                           <div className="flex items-center gap-2 text-xs text-muted-foreground">
                             <Shield className="w-4 h-4 shrink-0" /> Seus dados são criptografados e protegidos pela LGPD.
                           </div>
-                          <div className="flex gap-3">
-                            <Button variant="outline" className="flex-1 border-white/10" onClick={() => setStep(2)}><ChevronLeft className="w-5 h-5 mr-2" /> Voltar</Button>
-                            <Button className="flex-1 gradient-brand text-white h-12" onClick={handleConfirmPayment}>
-                              <Sparkles className="w-5 h-5 mr-2" /> Confirmar R$ {totalAmount.toFixed(2)}
-                            </Button>
-                          </div>
+                          <Button variant="outline" className="border-white/10" onClick={() => setStep(2)}><ChevronLeft className="w-5 h-5 mr-2" /> Voltar</Button>
                         </div>
                       )}
                     </div>

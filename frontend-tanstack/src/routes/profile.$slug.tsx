@@ -13,6 +13,7 @@ import { useProfessional } from '@/hooks/useProfessionals'
 import { useAuthStore } from '@/store/auth.store'
 import { api, extractError } from '@/lib/api'
 import { useReviews } from '@/hooks/useReviews'
+import { TipModal } from '@/components/TipModal'
 import { toast } from 'sonner'
 
 export const Route = createFileRoute('/profile/$slug')({
@@ -31,6 +32,7 @@ function ProfilePage() {
   const [selectedPhoto, setSelectedPhoto] = useState(0)
   const [lightboxOpen, setLightboxOpen] = useState(false)
   const [startingChat, setStartingChat] = useState(false)
+  const [tipOpen, setTipOpen] = useState(false)
 
   const photos: string[] = professional && Array.isArray(professional.photos) && professional.photos.length > 0
     ? professional.photos
@@ -150,6 +152,11 @@ function ProfilePage() {
                 <Button variant="outline" className="w-full border-brand-500/30 text-brand-400 hover:bg-brand-500/10 h-12 gap-2" onClick={handleChat} disabled={startingChat}>
                   {startingChat ? <><Loader2 className="w-5 h-5 animate-spin" /> Abrindo chat...</> : <><MessageCircle className="w-5 h-5" /> Enviar mensagem</>}
                 </Button>
+                {user && user.role === 'CLIENT' && (
+                  <Button variant="outline" className="w-full border-pink-500/30 text-pink-400 hover:bg-pink-500/10 h-12 gap-2" onClick={() => setTipOpen(true)}>
+                    ❤️ Enviar gorjeta
+                  </Button>
+                )}
               </div>
             </div>
 
@@ -236,6 +243,10 @@ function ProfilePage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {professional && (
+        <TipModal open={tipOpen} onClose={() => setTipOpen(false)} professionalId={professional.id} professionalName={(professional as any).displayName || (professional as any).user?.name || professional.name || 'Profissional'} />
+      )}
     </div>
   )
 }
