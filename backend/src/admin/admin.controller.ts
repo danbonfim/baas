@@ -3,6 +3,7 @@ import { ApiTags, ApiBearerAuth, ApiOperation, ApiHeader } from '@nestjs/swagger
 import { AdminService } from './admin.service'
 import { SeedService } from './seed.service'
 import { JwtAuthGuard } from '../auth/jwt-auth.guard'
+import { AdminGuard } from '../auth/admin.guard'
 
 @ApiTags('Admin')
 @Controller('admin')
@@ -40,7 +41,7 @@ export class AdminController {
   // ─── Regular admin endpoints (JWT-protected) ───────────
 
   @Get('stats')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, AdminGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Platform statistics' })
   stats() {
@@ -48,38 +49,62 @@ export class AdminController {
   }
 
   @Get('kyc/pending')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, AdminGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'List pending KYC verifications' })
   pendingKyc() {
     return this.service.getPendingKyc()
   }
 
+  @Get('kyc/:id')
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get KYC review detail for a professional' })
+  kycDetail(@Param('id') id: string) {
+    return this.service.getKycDetail(id)
+  }
+
   @Patch('kyc/:id/approve')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, AdminGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Approve KYC for professional' })
-  approveKyc(@Param('id') id: string) {
-    return this.service.approveKyc(id)
+  approveKyc(@Param('id') id: string, @Body('level') level?: string) {
+    return this.service.approveKyc(id, level)
+  }
+
+  @Patch('kyc/:id/reject')
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Reject KYC with reason' })
+  rejectKyc(@Param('id') id: string, @Body('reason') reason: string) {
+    return this.service.rejectKyc(id, reason)
   }
 
   @Patch('users/:id/ban')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, AdminGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Ban user' })
   banUser(@Param('id') id: string, @Body('reason') reason: string) {
     return this.service.banUser(id, reason)
   }
 
+  @Patch('users/:id/unban')
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Unban user' })
+  unbanUser(@Param('id') id: string) {
+    return this.service.unbanUser(id)
+  }
+
   @Get('bookings/recent')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, AdminGuard)
   @ApiBearerAuth()
   recentBookings() {
     return this.service.getRecentBookings()
   }
 
   @Get('users')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, AdminGuard)
   @ApiBearerAuth()
   allUsers(@Query('page') page?: string) {
     return this.service.getAllUsers(page ? parseInt(page) : 1)

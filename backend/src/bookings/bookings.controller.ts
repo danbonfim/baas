@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Body, Param, Query, UseGuards, Request } from '@nestjs/common'
+import { Controller, Get, Post, Patch, Body, Param, Query, UseGuards, Request, ForbiddenException } from '@nestjs/common'
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiBody } from '@nestjs/swagger'
 import { BookingsService } from './bookings.service'
 import { CreateBookingDto } from './dto/create-booking.dto'
@@ -14,6 +14,7 @@ export class BookingsController {
   @Post()
   @ApiOperation({ summary: 'Create booking' })
   create(@Request() req: any, @Body() dto: CreateBookingDto) {
+    if (!req.user.clientId) throw new ForbiddenException('Apenas clientes podem criar agendamentos')
     return this.service.create(req.user.clientId, dto)
   }
 
@@ -36,6 +37,7 @@ export class BookingsController {
     },
   })
   recurring(@Request() req: any, @Body() body: any) {
+    if (!req.user.clientId) throw new ForbiddenException('Apenas clientes podem criar agendamentos')
     return this.service.createRecurring(req.user.clientId, body)
   }
 

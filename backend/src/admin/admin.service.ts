@@ -32,10 +32,41 @@ export class AdminService {
     })
   }
 
-  async approveKyc(professionalId: string) {
+  async getKycDetail(professionalId: string) {
+    return this.prisma.professional.findUniqueOrThrow({
+      where: { id: professionalId },
+      select: {
+        id: true, slug: true, kycStatus: true, kycLevel: true,
+        kycSelfieUrl: true, kycDocumentUrl: true, kycDocuments: true,
+        kycSubmittedAt: true, kycReviewedAt: true, kycRejectionReason: true,
+        verified: true, city: true, state: true, age: true, createdAt: true,
+        user: { select: { name: true, email: true, avatar: true } },
+      },
+    })
+  }
+
+  async approveKyc(professionalId: string, level?: string) {
     return this.prisma.professional.update({
       where: { id: professionalId },
-      data: { kycStatus: 'APPROVED', verified: true, kycReviewedAt: new Date() } as any,
+      data: {
+        kycStatus: 'APPROVED',
+        kycLevel: level || 'DOCUMENT',
+        verified: true,
+        kycReviewedAt: new Date(),
+        kycRejectionReason: null,
+      } as any,
+    })
+  }
+
+  async rejectKyc(professionalId: string, reason: string) {
+    return this.prisma.professional.update({
+      where: { id: professionalId },
+      data: {
+        kycStatus: 'REJECTED',
+        kycRejectionReason: reason,
+        kycReviewedAt: new Date(),
+        verified: false,
+      } as any,
     })
   }
 
@@ -43,6 +74,13 @@ export class AdminService {
     return this.prisma.user.update({
       where: { id: userId },
       data: { banned: true, bannedReason: reason },
+    })
+  }
+
+  async unbanUser(userId: string) {
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: { banned: false, bannedReason: null },
     })
   }
 
