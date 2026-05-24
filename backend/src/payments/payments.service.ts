@@ -1,14 +1,25 @@
-import { Injectable, BadRequestException } from '@nestjs/common'
+import { Injectable, BadRequestException, Logger } from '@nestjs/common'
 import { PrismaService } from '../prisma.service'
+import { TipsService } from '../tips/tips.service'
+import { ContentService } from '../content/content.service'
+import { BoostService } from '../boost/boost.service'
+import { ProSubscriptionService } from '../pro-subscription/pro-subscription.service'
 import Stripe from 'stripe'
 
 type StripeInstance = InstanceType<typeof Stripe>
 
 @Injectable()
 export class PaymentsService {
+  private readonly logger = new Logger(PaymentsService.name)
   private stripe: StripeInstance
 
-  constructor(private prisma: PrismaService) {
+  constructor(
+    private prisma: PrismaService,
+    private tips: TipsService,
+    private content: ContentService,
+    private boost: BoostService,
+    private proSubs: ProSubscriptionService,
+  ) {
     this.stripe = new (Stripe as any)(
       process.env.STRIPE_SECRET_KEY || 'sk_test_placeholder',
       { apiVersion: '2026-04-22.dahlia' }
@@ -126,13 +137,52 @@ export class PaymentsService {
   }
 
   private async handlePaymentSucceeded(intent: any) {
-    const { bookingId } = intent.metadata || {}
-    if (!bookingId) return
+    const metadata = intent.metadata || {}
+    const type = metadata.type
 
-    await this.prisma.booking.update({
-      where: { id: bookingId },
-      data: { paymentStatus: 'PAID', stripeChargeId: intent.latest_charge, status: 'CONFIRMED' },
-    })
+    try {
+      // Route by payment type
+      switch (type) {
+        case 'TIP':
+          await this.tips.finalizeTip(intent.id)
+          this.logger.log(`Tip finalized for intent ${intent.id}`)
+          break
+
+        case 'CONTENT_UNLOCK':
+          if (metadata.contentId && metadata.clientId) {
+            await this.content.finalizeUnlock(metadata.contentId, metadata.clientId, intent.id)
+            this.logger.log(`Content unlock finalized for intent ${intent.id}`)
+          }
+          break
+
+        case 'BOOST':
+          if (metadata.professionalId && metadata.boostType) {
+            await this.boost.activateBoost(metadata.professionalId, metadata.boostType, intent.id)
+            this.logger.log(`Boost activated for intent ${intent.id}`)
+          }
+          break
+
+        case 'PRO_SUBSCRIPTION':
+          if (metadata.clientId && metadata.professionalId) {
+            await this.proSubs.finalizeSubscription(metadata.clientId, metadata.professionalId, intent.id)
+            this.logger.log(`Pro subscription finalized for intent ${intent.id}`)
+          }
+          break
+
+        default:
+          // Default: booking payment (legacy — bookingId in metadata, no type)
+          if (metadata.bookingId) {
+            await this.prisma.booking.update({
+              where: { id: metadata.bookingId },
+              data: { paymentStatus: 'PAID', stripeChargeId: intent.latest_charge, status: 'CONFIRMED' },
+            })
+            this.logger.log(`Booking ${metadata.bookingId} marked as paid`)
+          }
+      }
+    } catch (err: any) {
+      this.logger.error(`Failed to handle payment_intent.succeeded ${intent.id}: ${err.message}`)
+      throw err
+    }
   }
 
   private async handlePaymentFailed(intent: any) {

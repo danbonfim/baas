@@ -22,6 +22,7 @@ import { TipsModule } from './tips/tips.module'
 import { ContentModule } from './content/content.module'
 import { ProSubscriptionModule } from './pro-subscription/pro-subscription.module'
 import { DiscoveryModule } from './discovery/discovery.module'
+import { ProToolsModule } from './pro-tools/pro-tools.module'
 
 @Module({
   imports: [
@@ -51,6 +52,7 @@ import { DiscoveryModule } from './discovery/discovery.module'
     ContentModule,
     ProSubscriptionModule,
     DiscoveryModule,
+    ProToolsModule,
   ],
   providers: [
     PrismaService,

@@ -5,6 +5,7 @@ import { ChatService } from '../chat/chat.service'
 import { VerificationService } from '../auth/verification.service'
 import { BoostService } from '../boost/boost.service'
 import { ProSubscriptionService } from '../pro-subscription/pro-subscription.service'
+import { BookingsService } from '../bookings/bookings.service'
 
 @Injectable()
 export class SafetyCronService {
@@ -16,7 +17,18 @@ export class SafetyCronService {
     private verification: VerificationService,
     private boost: BoostService,
     private proSubs: ProSubscriptionService,
+    private bookings: BookingsService,
   ) {}
+
+  @Cron(CronExpression.EVERY_HOUR)
+  async sendBookingReminders() {
+    try {
+      const r = await this.bookings.sendUpcomingReminders()
+      if (r.reminded > 0) this.logger.log(`[BOOKINGS] Sent ${r.reminded} 24h reminders`)
+    } catch (err) {
+      this.logger.error('[BOOKINGS] Reminder cron failed', err)
+    }
+  }
 
   @Cron(CronExpression.EVERY_30_MINUTES)
   async expireBoosts() {
