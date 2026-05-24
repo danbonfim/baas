@@ -48,8 +48,8 @@ export class DiscoveryController {
     const lng = +q.lng
     const radius = q.radius ? +q.radius : 10
     const filters = {
-      verified: q.verified === 'true',
-      online: q.online === 'true',
+      verified: q.verified === 'true' ? true : q.verified === 'false' ? false : undefined,
+      online: q.online === 'true' ? true : q.online === 'false' ? false : undefined,
       minPrice: q.minPrice ? +q.minPrice : undefined,
       maxPrice: q.maxPrice ? +q.maxPrice : undefined,
     }
@@ -64,7 +64,7 @@ export class DiscoveryController {
     return this.discovery.availableNow({
       city: q.city,
       maxPrice: q.maxPrice ? +q.maxPrice : undefined,
-      verified: q.verified === 'true',
+      verified: q.verified === 'true' ? true : q.verified === 'false' ? false : undefined,
       lat: q.lat ? +q.lat : undefined,
       lng: q.lng ? +q.lng : undefined,
     })
