@@ -3,22 +3,22 @@ import { Sparkles } from 'lucide-react'
 
 const footerLinks = {
   Plataforma: [
-    { label: 'Como funciona', href: '#' },
-    { label: 'Planos', href: '#' },
-    { label: 'Para profissionais', href: '#' },
-    { label: 'Segurança', href: '#' },
+    { label: 'Como funciona', href: '/como-funciona' },
+    { label: 'Planos', href: '/planos' },
+    { label: 'Para profissionais', href: '/para-profissionais' },
+    { label: 'Segurança', href: '/seguranca' },
   ],
   Suporte: [
-    { label: 'Central de ajuda', href: '#' },
-    { label: 'Contato', href: '#' },
-    { label: 'Denunciar', href: '#' },
-    { label: 'FAQ', href: '#' },
+    { label: 'Central de ajuda', href: '/ajuda' },
+    { label: 'Contato', href: '/contato' },
+    { label: 'Denunciar', href: '/denunciar' },
+    { label: 'FAQ', href: '/faq' },
   ],
   Legal: [
-    { label: 'Termos de uso', href: '#' },
-    { label: 'Privacidade', href: '#' },
-    { label: 'LGPD', href: '#' },
-    { label: 'Cookies', href: '#' },
+    { label: 'Termos de uso', href: '/termos' },
+    { label: 'Privacidade', href: '/privacidade' },
+    { label: 'LGPD', href: '/lgpd' },
+    { label: 'Cookies', href: '/cookies' },
   ],
 }
 
@@ -44,9 +44,9 @@ export function Footer() {
               <ul className="space-y-2">
                 {links.map((link) => (
                   <li key={link.label}>
-                    <a href={link.href} className="text-sm text-muted-foreground hover:text-brand-400 transition-colors">
+                    <Link to={link.href} className="text-sm text-muted-foreground hover:text-brand-400 transition-colors">
                       {link.label}
-                    </a>
+                    </Link>
                   </li>
                 ))}
               </ul>

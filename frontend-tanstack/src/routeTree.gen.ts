@@ -9,7 +9,19 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TermosRouteImport } from './routes/termos'
+import { Route as SegurancaRouteImport } from './routes/seguranca'
 import { Route as SearchRouteImport } from './routes/search'
+import { Route as PrivacidadeRouteImport } from './routes/privacidade'
+import { Route as PlanosRouteImport } from './routes/planos'
+import { Route as ParaProfissionaisRouteImport } from './routes/para-profissionais'
+import { Route as LgpdRouteImport } from './routes/lgpd'
+import { Route as FaqRouteImport } from './routes/faq'
+import { Route as DenunciarRouteImport } from './routes/denunciar'
+import { Route as CookiesRouteImport } from './routes/cookies'
+import { Route as ContatoRouteImport } from './routes/contato'
+import { Route as ComoFuncionaRouteImport } from './routes/como-funciona'
+import { Route as AjudaRouteImport } from './routes/ajuda'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ProfileSlugRouteImport } from './routes/profile.$slug'
@@ -22,9 +34,69 @@ import { Route as AuthenticatedDashboardProfessionalRouteImport } from './routes
 import { Route as AuthenticatedDashboardClientRouteImport } from './routes/_authenticated/dashboard.client'
 import { Route as AuthenticatedDashboardAdminRouteImport } from './routes/_authenticated/dashboard.admin'
 
+const TermosRoute = TermosRouteImport.update({
+  id: '/termos',
+  path: '/termos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SegurancaRoute = SegurancaRouteImport.update({
+  id: '/seguranca',
+  path: '/seguranca',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SearchRoute = SearchRouteImport.update({
   id: '/search',
   path: '/search',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacidadeRoute = PrivacidadeRouteImport.update({
+  id: '/privacidade',
+  path: '/privacidade',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PlanosRoute = PlanosRouteImport.update({
+  id: '/planos',
+  path: '/planos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ParaProfissionaisRoute = ParaProfissionaisRouteImport.update({
+  id: '/para-profissionais',
+  path: '/para-profissionais',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LgpdRoute = LgpdRouteImport.update({
+  id: '/lgpd',
+  path: '/lgpd',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FaqRoute = FaqRouteImport.update({
+  id: '/faq',
+  path: '/faq',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DenunciarRoute = DenunciarRouteImport.update({
+  id: '/denunciar',
+  path: '/denunciar',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CookiesRoute = CookiesRouteImport.update({
+  id: '/cookies',
+  path: '/cookies',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ContatoRoute = ContatoRouteImport.update({
+  id: '/contato',
+  path: '/contato',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ComoFuncionaRoute = ComoFuncionaRouteImport.update({
+  id: '/como-funciona',
+  path: '/como-funciona',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AjudaRoute = AjudaRouteImport.update({
+  id: '/ajuda',
+  path: '/ajuda',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedRoute = AuthenticatedRouteImport.update({
@@ -87,7 +159,19 @@ const AuthenticatedDashboardAdminRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/ajuda': typeof AjudaRoute
+  '/como-funciona': typeof ComoFuncionaRoute
+  '/contato': typeof ContatoRoute
+  '/cookies': typeof CookiesRoute
+  '/denunciar': typeof DenunciarRoute
+  '/faq': typeof FaqRoute
+  '/lgpd': typeof LgpdRoute
+  '/para-profissionais': typeof ParaProfissionaisRoute
+  '/planos': typeof PlanosRoute
+  '/privacidade': typeof PrivacidadeRoute
   '/search': typeof SearchRoute
+  '/seguranca': typeof SegurancaRoute
+  '/termos': typeof TermosRoute
   '/booking': typeof AuthenticatedBookingRoute
   '/chat': typeof AuthenticatedChatRoute
   '/settings': typeof AuthenticatedSettingsRoute
@@ -100,7 +184,19 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/ajuda': typeof AjudaRoute
+  '/como-funciona': typeof ComoFuncionaRoute
+  '/contato': typeof ContatoRoute
+  '/cookies': typeof CookiesRoute
+  '/denunciar': typeof DenunciarRoute
+  '/faq': typeof FaqRoute
+  '/lgpd': typeof LgpdRoute
+  '/para-profissionais': typeof ParaProfissionaisRoute
+  '/planos': typeof PlanosRoute
+  '/privacidade': typeof PrivacidadeRoute
   '/search': typeof SearchRoute
+  '/seguranca': typeof SegurancaRoute
+  '/termos': typeof TermosRoute
   '/booking': typeof AuthenticatedBookingRoute
   '/chat': typeof AuthenticatedChatRoute
   '/settings': typeof AuthenticatedSettingsRoute
@@ -115,7 +211,19 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteWithChildren
+  '/ajuda': typeof AjudaRoute
+  '/como-funciona': typeof ComoFuncionaRoute
+  '/contato': typeof ContatoRoute
+  '/cookies': typeof CookiesRoute
+  '/denunciar': typeof DenunciarRoute
+  '/faq': typeof FaqRoute
+  '/lgpd': typeof LgpdRoute
+  '/para-profissionais': typeof ParaProfissionaisRoute
+  '/planos': typeof PlanosRoute
+  '/privacidade': typeof PrivacidadeRoute
   '/search': typeof SearchRoute
+  '/seguranca': typeof SegurancaRoute
+  '/termos': typeof TermosRoute
   '/_authenticated/booking': typeof AuthenticatedBookingRoute
   '/_authenticated/chat': typeof AuthenticatedChatRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
@@ -130,7 +238,19 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/ajuda'
+    | '/como-funciona'
+    | '/contato'
+    | '/cookies'
+    | '/denunciar'
+    | '/faq'
+    | '/lgpd'
+    | '/para-profissionais'
+    | '/planos'
+    | '/privacidade'
     | '/search'
+    | '/seguranca'
+    | '/termos'
     | '/booking'
     | '/chat'
     | '/settings'
@@ -143,7 +263,19 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/ajuda'
+    | '/como-funciona'
+    | '/contato'
+    | '/cookies'
+    | '/denunciar'
+    | '/faq'
+    | '/lgpd'
+    | '/para-profissionais'
+    | '/planos'
+    | '/privacidade'
     | '/search'
+    | '/seguranca'
+    | '/termos'
     | '/booking'
     | '/chat'
     | '/settings'
@@ -157,7 +289,19 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_authenticated'
+    | '/ajuda'
+    | '/como-funciona'
+    | '/contato'
+    | '/cookies'
+    | '/denunciar'
+    | '/faq'
+    | '/lgpd'
+    | '/para-profissionais'
+    | '/planos'
+    | '/privacidade'
     | '/search'
+    | '/seguranca'
+    | '/termos'
     | '/_authenticated/booking'
     | '/_authenticated/chat'
     | '/_authenticated/settings'
@@ -172,7 +316,19 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
+  AjudaRoute: typeof AjudaRoute
+  ComoFuncionaRoute: typeof ComoFuncionaRoute
+  ContatoRoute: typeof ContatoRoute
+  CookiesRoute: typeof CookiesRoute
+  DenunciarRoute: typeof DenunciarRoute
+  FaqRoute: typeof FaqRoute
+  LgpdRoute: typeof LgpdRoute
+  ParaProfissionaisRoute: typeof ParaProfissionaisRoute
+  PlanosRoute: typeof PlanosRoute
+  PrivacidadeRoute: typeof PrivacidadeRoute
   SearchRoute: typeof SearchRoute
+  SegurancaRoute: typeof SegurancaRoute
+  TermosRoute: typeof TermosRoute
   AuthLoginRoute: typeof AuthLoginRoute
   AuthRegisterRoute: typeof AuthRegisterRoute
   ProfileSlugRoute: typeof ProfileSlugRoute
@@ -180,11 +336,95 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/termos': {
+      id: '/termos'
+      path: '/termos'
+      fullPath: '/termos'
+      preLoaderRoute: typeof TermosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/seguranca': {
+      id: '/seguranca'
+      path: '/seguranca'
+      fullPath: '/seguranca'
+      preLoaderRoute: typeof SegurancaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/search': {
       id: '/search'
       path: '/search'
       fullPath: '/search'
       preLoaderRoute: typeof SearchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacidade': {
+      id: '/privacidade'
+      path: '/privacidade'
+      fullPath: '/privacidade'
+      preLoaderRoute: typeof PrivacidadeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/planos': {
+      id: '/planos'
+      path: '/planos'
+      fullPath: '/planos'
+      preLoaderRoute: typeof PlanosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/para-profissionais': {
+      id: '/para-profissionais'
+      path: '/para-profissionais'
+      fullPath: '/para-profissionais'
+      preLoaderRoute: typeof ParaProfissionaisRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lgpd': {
+      id: '/lgpd'
+      path: '/lgpd'
+      fullPath: '/lgpd'
+      preLoaderRoute: typeof LgpdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/faq': {
+      id: '/faq'
+      path: '/faq'
+      fullPath: '/faq'
+      preLoaderRoute: typeof FaqRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/denunciar': {
+      id: '/denunciar'
+      path: '/denunciar'
+      fullPath: '/denunciar'
+      preLoaderRoute: typeof DenunciarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/cookies': {
+      id: '/cookies'
+      path: '/cookies'
+      fullPath: '/cookies'
+      preLoaderRoute: typeof CookiesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/contato': {
+      id: '/contato'
+      path: '/contato'
+      fullPath: '/contato'
+      preLoaderRoute: typeof ContatoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/como-funciona': {
+      id: '/como-funciona'
+      path: '/como-funciona'
+      fullPath: '/como-funciona'
+      preLoaderRoute: typeof ComoFuncionaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ajuda': {
+      id: '/ajuda'
+      path: '/ajuda'
+      fullPath: '/ajuda'
+      preLoaderRoute: typeof AjudaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated': {
@@ -293,7 +533,19 @@ const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
+  AjudaRoute: AjudaRoute,
+  ComoFuncionaRoute: ComoFuncionaRoute,
+  ContatoRoute: ContatoRoute,
+  CookiesRoute: CookiesRoute,
+  DenunciarRoute: DenunciarRoute,
+  FaqRoute: FaqRoute,
+  LgpdRoute: LgpdRoute,
+  ParaProfissionaisRoute: ParaProfissionaisRoute,
+  PlanosRoute: PlanosRoute,
+  PrivacidadeRoute: PrivacidadeRoute,
   SearchRoute: SearchRoute,
+  SegurancaRoute: SegurancaRoute,
+  TermosRoute: TermosRoute,
   AuthLoginRoute: AuthLoginRoute,
   AuthRegisterRoute: AuthRegisterRoute,
   ProfileSlugRoute: ProfileSlugRoute,
