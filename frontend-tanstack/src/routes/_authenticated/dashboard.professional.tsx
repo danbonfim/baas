@@ -4,11 +4,12 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   DollarSign, Calendar, Eye, Star, Loader2, Wallet, BarChart3,
   CheckCircle2, XCircle, Clock, AlertCircle, Shield, ArrowUpRight,
-  User, MessageCircle, TrendingUp
+  User, MessageCircle, TrendingUp, Zap, Settings
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { BoostSelector } from '@/components/BoostSelector'
 import { useRequireAuth } from '@/hooks/useRequireAuth'
 import { useProfessionalBookings, useCreateBooking, BookingData } from '@/hooks/useBookings'
 import { Link } from '@tanstack/react-router'
@@ -97,6 +98,7 @@ function ProfessionalDashboard() {
   const [activeTab, setActiveTab] = useState('bookings')
   const [actionLoading, setActionLoading] = useState(false)
   const [localBookings, setLocalBookings] = useState<BookingData[]>([])
+  const [boostOpen, setBoostOpen] = useState(false)
 
   useEffect(() => { setLocalBookings(bookings) }, [bookings])
 
@@ -166,6 +168,9 @@ function ProfessionalDashboard() {
                 </Button>
               </Link>
             )}
+            <Button variant="outline" className="border-amber-500/30 text-amber-400 hover:bg-amber-500/10 gap-2" onClick={() => setBoostOpen(true)}>
+              <Zap className="w-4 h-4" /> Boost
+            </Button>
             <Link to="/chat">
               <Button className="gradient-brand text-white gap-2">
                 <MessageCircle className="w-4 h-4" /> Mensagens
@@ -357,6 +362,14 @@ function ProfessionalDashboard() {
                       <MessageCircle className="w-4 h-4" /> Ver mensagens
                     </Button>
                   </Link>
+                  <Link to="/settings" className="block">
+                    <Button variant="outline" className="border-white/10 w-full gap-2">
+                      <Settings className="w-4 h-4" /> Configurações
+                    </Button>
+                  </Link>
+                  <Button variant="outline" className="border-amber-500/30 text-amber-400 hover:bg-amber-500/10 w-full gap-2" onClick={() => setBoostOpen(true)}>
+                    <Zap className="w-4 h-4" /> Boost de perfil
+                  </Button>
                   {pro?.kycStatus === 'PENDING' && (
                     <div className="glass rounded-xl p-4 border border-amber-500/20">
                       <p className="text-sm text-amber-400 font-medium mb-1">Verificação KYC pendente</p>
@@ -371,6 +384,8 @@ function ProfessionalDashboard() {
           </TabsContent>
         </Tabs>
       </div>
+
+      <BoostSelector open={boostOpen} onClose={() => setBoostOpen(false)} />
     </div>
   )
 }

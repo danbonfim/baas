@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Star, MapPin, Shield, Crown, MessageCircle, Calendar,
@@ -14,6 +14,7 @@ import { useAuthStore } from '@/store/auth.store'
 import { api, extractError } from '@/lib/api'
 import { useReviews } from '@/hooks/useReviews'
 import { TipModal } from '@/components/TipModal'
+import { ContentPaywall } from '@/components/ContentPaywall'
 import { toast } from 'sonner'
 
 export const Route = createFileRoute('/profile/$slug')({
@@ -33,6 +34,15 @@ function ProfilePage() {
   const [lightboxOpen, setLightboxOpen] = useState(false)
   const [startingChat, setStartingChat] = useState(false)
   const [tipOpen, setTipOpen] = useState(false)
+  const [contents, setContents] = useState<any[]>([])
+
+  useEffect(() => {
+    if (professional?.id) {
+      api.get(`/content/professional/${professional.id}`).then(({ data }) => {
+        if (Array.isArray(data)) setContents(data)
+      }).catch(() => {})
+    }
+  }, [professional?.id])
 
   const photos: string[] = professional && Array.isArray(professional.photos) && professional.photos.length > 0
     ? professional.photos
@@ -192,6 +202,7 @@ function ProfilePage() {
             <TabsList className="bg-white/5 border border-white/10">
               <TabsTrigger value="about">Sobre</TabsTrigger>
               <TabsTrigger value="reviews">Avaliações ({reviews.length})</TabsTrigger>
+              {contents.length > 0 && <TabsTrigger value="content">Conteúdo ({contents.length})</TabsTrigger>}
             </TabsList>
             <TabsContent value="about" className="mt-6">
               <div className="glass rounded-2xl p-6">
@@ -227,6 +238,27 @@ function ProfilePage() {
                 )}
               </div>
             </TabsContent>
+
+            {contents.length > 0 && (
+              <TabsContent value="content" className="mt-6">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {contents.map((c: any) => (
+                    <ContentPaywall
+                      key={c.id}
+                      contentId={c.id}
+                      thumbnailUrl={c.thumbnailUrl}
+                      blurUrl={c.blurUrl}
+                      price={c.price}
+                      title={c.title}
+                      type={c.type}
+                      onUnlocked={(url) => {
+                        setContents(prev => prev.map(item => item.id === c.id ? { ...item, url, unlocked: true } : item))
+                      }}
+                    />
+                  ))}
+                </div>
+              </TabsContent>
+            )}
           </Tabs>
         </div>
       </div>

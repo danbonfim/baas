@@ -1,13 +1,13 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { Mail, Lock, Eye, EyeOff, Sparkles, Loader2 } from 'lucide-react'
+import { Mail, Lock, Eye, EyeOff, Sparkles, Loader2, KeyRound } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { useAuth } from '@/hooks/useAuth'
-import { extractError } from '@/lib/api'
+import { api, extractError } from '@/lib/api'
 import { toast } from 'sonner'
 
 export const Route = createFileRoute('/auth/login')({
@@ -19,18 +19,44 @@ function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [mfaToken, setMfaToken] = useState('')
+  const [showMfa, setShowMfa] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [forgotMode, setForgotMode] = useState(false)
+  const [forgotEmail, setForgotEmail] = useState('')
+  const [forgotLoading, setForgotLoading] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!email || !password) { toast.error('Preencha todos os campos'); return }
     setLoading(true)
     try {
-      await login({ email, password })
+      await login({ email, password, mfaToken: mfaToken || undefined })
+    } catch (err) {
+      const msg = extractError(err)
+      if (msg.toLowerCase().includes('mfa') || msg.toLowerCase().includes('two-factor') || msg.toLowerCase().includes('2fa')) {
+        setShowMfa(true)
+        toast.error('Digite o código MFA do seu autenticador')
+      } else {
+        toast.error(msg)
+      }
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!forgotEmail) { toast.error('Digite seu email'); return }
+    setForgotLoading(true)
+    try {
+      await api.post('/auth/forgot-password', { email: forgotEmail })
+      toast.success('Email de recuperação enviado! Verifique sua caixa de entrada.')
+      setForgotMode(false)
     } catch (err) {
       toast.error(extractError(err))
     } finally {
-      setLoading(false)
+      setForgotLoading(false)
     }
   }
 
@@ -75,7 +101,7 @@ function LoginPage() {
             <div>
               <div className="flex items-center justify-between mb-2">
                 <Label htmlFor="password" className="text-sm">Senha</Label>
-                <a href="#" className="text-xs text-brand-400 hover:text-brand-300">Esqueceu?</a>
+                <button type="button" onClick={() => { setForgotMode(true); setForgotEmail(email) }} className="text-xs text-brand-400 hover:text-brand-300">Esqueceu?</button>
               </div>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
@@ -97,6 +123,18 @@ function LoginPage() {
                 </button>
               </div>
             </div>
+
+            {showMfa && (
+              <div>
+                <Label htmlFor="mfa" className="text-sm mb-2 block">Código MFA</Label>
+                <div className="relative">
+                  <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                  <Input id="mfa" type="text" placeholder="000000" maxLength={6} value={mfaToken}
+                    onChange={(e) => setMfaToken(e.target.value)}
+                    className="pl-10 bg-white/5 border-white/10 text-center text-lg tracking-widest" disabled={loading} />
+                </div>
+              </div>
+            )}
 
             <Button type="submit" className="w-full gradient-brand text-white hover:opacity-90 h-11" disabled={loading}>
               {loading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Entrando...</> : 'Entrar'}
@@ -126,6 +164,24 @@ function LoginPage() {
             <Link to="/auth/register" className="text-brand-400 hover:text-brand-300 font-medium">Cadastre-se</Link>
           </p>
         </div>
+
+        {forgotMode && (
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+            className="glass rounded-2xl p-6 mt-4">
+            <h3 className="font-bold mb-2">Recuperar senha</h3>
+            <p className="text-sm text-muted-foreground mb-4">Digite seu email para receber o link de recuperação.</p>
+            <form onSubmit={handleForgotPassword} className="space-y-3">
+              <Input type="email" placeholder="seu@email.com" value={forgotEmail}
+                onChange={e => setForgotEmail(e.target.value)} className="bg-white/5 border-white/10" />
+              <div className="flex gap-2">
+                <Button type="button" variant="outline" className="border-white/10" onClick={() => setForgotMode(false)}>Cancelar</Button>
+                <Button type="submit" className="gradient-brand text-white flex-1" disabled={forgotLoading}>
+                  {forgotLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null} Enviar
+                </Button>
+              </div>
+            </form>
+          </motion.div>
+        )}
       </motion.div>
     </div>
   )

@@ -4,7 +4,7 @@ import { toast } from 'sonner'
 import { api, extractError } from '@/lib/api'
 import { useAuthStore, AuthUser } from '@/store/auth.store'
 
-interface LoginPayload { email: string; password: string }
+interface LoginPayload { email: string; password: string; mfaToken?: string }
 interface RegisterPayload {
   email: string
   password: string
